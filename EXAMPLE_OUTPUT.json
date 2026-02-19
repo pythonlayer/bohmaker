@@ -1,0 +1,327 @@
+{
+  "#comment": "[CARNIVAL_LEVEL_NAME] | BOH-LM: Ver-2 [RFL v1.4.1] in collaboration with Slimmy and co.",
+  "#zombies": "",
+  "objects": [
+    {
+      "objclass": "LevelDefinition",
+      "objdata": {
+        "Description": "[PLAYERS_TRIP_TO_CARNIVAL]",
+        "LevelNumber": 1,
+        "StartingSun": 0,
+        "SuppressPlantfoodPurchase": false,
+        "SuppressAccountUpgrades": true,
+        "DisableSaveGame": true,
+        "LevelPowerupSet": "LevelPowerupsDefault",
+        "Loot": "RTID(NoLoot@LevelModules)",
+        "Modules": [
+          "RTID(StandardIntro@LevelModules)",
+          "RTID(ZombiesDeadWinCon@LevelModules)",
+          "RTID(SeedBank@CurrentLevel)",
+          "RTID(CarnieMinigameModule@CurrentLevel)",
+          "RTID(Posters@CurrentLevel)",
+          "RTID(SeedPacketHalfTimeModule@CurrentLevel)"
+        ],
+        "ResourceGroupNames": [],
+        "MusicType": "MiniGame_B",
+        "Name": "[CARNIVAL_LEVEL_NAME]",
+        "NormalPresentTable": "egypt_normal_01",
+        "ShinyPresentTable": "egypt_shiny_01",
+        "StageModule": "RTID(CarnivalStage@LevelModules)"
+      }
+    },
+    {
+      "aliases": [
+        "Posters"
+      ],
+      "objclass": "CarniePosterModuleProperties",
+      "objdata": {
+        "LeftPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_HAVEABLAST_LEFT",
+        "RightPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_TRAMPOLIMPS_RIGHT"
+      }
+    },
+    {
+      "aliases": [
+        "SeedPacketHalfTimeModule"
+      ],
+      "objclass": "PlantCooldownModifierProperties",
+      "objdata": {
+        "CooldownMultiplier": 0,
+        "HomeworldToExcludeFromOverride": ""
+      }
+    },
+    {
+      "aliases": [
+        "CarnieMinigameModule"
+      ],
+      "objclass": "CarnieMinigameProperties",
+      "objdata": {
+        "AllowRestart": true,
+        "Waves": [
+          {
+            "HatCount": 2,
+            "UseCustomZombiePlacement": true,
+            "UseCustomHatPositions": false,
+            "PreviewDuration": 3,
+            "RevealDuration": 1,
+            "HatPopAnims": [
+              "POPANIM_EFFECTS_CARNIVAL_1HATS"
+            ],
+            "WaveStartSoundID": "Play_Awooga",
+            "Choices": [
+              {
+                "PreviewZombie": "carnie",
+                "SunAmount": 0,
+                "SpawnedZombies": [],
+                "JitteredStartX": 840,
+                "JitteredOffset": 64,
+                "RevealZombie": "carnie"
+              }
+            ],
+            "SwapWaves": [
+              [
+                {
+                  "First": [
+                    0,
+                    1
+                  ],
+                  "Second": [
+                    1,
+                    0
+                  ],
+                  "Style": [
+                    "ParabolicUp",
+                    "ParabolicUp"
+                  ],
+                  "ParabolicHeight": [
+                    120,
+                    120
+                  ],
+                  "MovementCurve": [
+                    "ease_in",
+                    "ease_in"
+                  ],
+                  "Duration": 1,
+                  "Cooldown": 0
+                }
+              ],
+              [
+                {
+                  "First": [
+                    0,
+                    1
+                  ],
+                  "Second": [
+                    1,
+                    0
+                  ],
+                  "Style": [
+                    "SwapStraight",
+                    "SwapStraight"
+                  ],
+                  "MovementCurve": [
+                    "linear",
+                    "linear"
+                  ],
+                  "Duration": 0.5,
+                  "Cooldown": 0
+                }
+              ],
+              [
+                {
+                  "First": [
+                    1,
+                    0
+                  ],
+                  "Second": [
+                    0,
+                    1
+                  ],
+                  "Style": [
+                    "ParabolicUp",
+                    "ParabolicUp"
+                  ],
+                  "ParabolicHeight": [
+                    120,
+                    120
+                  ],
+                  "MovementCurve": [
+                    "ease_out",
+                    "ease_out"
+                  ],
+                  "Duration": 1,
+                  "Cooldown": 0
+                }
+              ]
+            ]
+          },
+          {
+            "HatCount": 2,
+            "UseCustomZombiePlacement": true,
+            "UseCustomHatPositions": false,
+            "PreviewDuration": 3,
+            "RevealDuration": 1,
+            "HatPopAnims": [
+              "POPANIM_EFFECTS_CARNIVAL_1HATS"
+            ],
+            "WaveStartSoundID": "Play_Awooga",
+            "Choices": [
+              {
+                "PreviewZombie": "carnie",
+                "SunAmount": 0,
+                "SpawnedZombies": [],
+                "JitteredStartX": 840,
+                "JitteredOffset": 64,
+                "RevealZombie": "carnie"
+              }
+            ],
+            "SwapWaves": [
+              [
+                {
+                  "First": [
+                    0,
+                    1
+                  ],
+                  "Second": [
+                    1,
+                    0
+                  ],
+                  "Style": [
+                    "ParabolicUp",
+                    "ParabolicUp"
+                  ],
+                  "ParabolicHeight": [
+                    120,
+                    120
+                  ],
+                  "MovementCurve": [
+                    "ease_in",
+                    "ease_in"
+                  ],
+                  "Duration": 1,
+                  "Cooldown": 0
+                }
+              ],
+              [
+                {
+                  "First": [
+                    0,
+                    1
+                  ],
+                  "Second": [
+                    1,
+                    0
+                  ],
+                  "Style": [
+                    "SwapStraight",
+                    "SwapStraight"
+                  ],
+                  "MovementCurve": [
+                    "linear",
+                    "linear"
+                  ],
+                  "Duration": 0.5,
+                  "Cooldown": 0
+                }
+              ],
+              [
+                {
+                  "First": [
+                    1,
+                    0
+                  ],
+                  "Second": [
+                    0,
+                    1
+                  ],
+                  "Style": [
+                    "ParabolicUp",
+                    "ParabolicUp"
+                  ],
+                  "ParabolicHeight": [
+                    120,
+                    120
+                  ],
+                  "MovementCurve": [
+                    "ease_out",
+                    "ease_out"
+                  ],
+                  "Duration": 1,
+                  "Cooldown": 0
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "aliases": [
+        "NewWaves"
+      ],
+      "objclass": "WaveManagerModuleProperties",
+      "objdata": {
+        "WaveManagerProps": "RTID(WaveManagerProps@CurrentLevel)"
+      }
+    },
+    {
+      "aliases": [
+        "WaveManagerProps"
+      ],
+      "objclass": "WaveManagerProperties",
+      "objdata": {
+        "FlagWaveInterval": 1,
+        "WaveCount": 0,
+        "ZombieCountdownFirstWaveSecs": 0,
+        "ZombieCountdownHugeWaveDelay": 0,
+        "SuppressFlagZombie": false,
+        "MaxNextWaveHealthPercentage": 0.5,
+        "MinNextWaveHealthPercentage": 0.5,
+        "Waves": []
+      }
+    },
+    {
+      "aliases": [
+        "SeedBank"
+      ],
+      "objclass": "SeedBankProperties",
+      "objdata": {
+        "PresetPlantList": [
+          {
+            "PlantType": "peashooter",
+            "Level": -1
+          },
+          {
+            "PlantType": "peashooter",
+            "Level": -1
+          },
+          {
+            "PlantType": "peashooter",
+            "Level": -1
+          },
+          {
+            "PlantType": "peashooter",
+            "Level": -1
+          },
+          {
+            "PlantType": "peashooter",
+            "Level": -1
+          },
+          {
+            "PlantType": "sunflower",
+            "Level": -1
+          },
+          {
+            "PlantType": "wallnut",
+            "Level": -1
+          },
+          {
+            "PlantType": "bonkchoy",
+            "Level": -1
+          }
+        ],
+        "SelectionMethod": "preset"
+      }
+    }
+  ],
+  "version": 1
+}

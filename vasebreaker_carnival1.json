@@ -1,0 +1,242 @@
+{"#comment": ":pea:",
+"objects": [{
+    "objclass": "LevelDefinition",
+    "objdata": {
+    "StartingSun": 50,
+    "Description": "",
+    "FirstRewardParam": "big_moneybag",
+    "IsVasebreaker": true,
+    "LevelPowerupSet": "LevelPowerupsVasebreaker",
+    "AddBonusStartingSun": false,
+    "DisablePlantBoosts": true,
+    "ResourceGroupNames": [
+					"PlantWitchHazelEffects",
+					"CarnieMinigameGroup",
+					"ZombieCarnieMagicianAudio",
+					"ZombieCarnieBucketHeadGroup",
+					"PlantRepeater",
+					"PlantRepeaterAudio",
+					"PeaEffects",
+					"ZombieCarnieGrinderHeadGroup",
+					"ZombieCarnieGrinderheadAudio",
+					"ZombieCarnieMonkeyGroup",
+					"PlantGatlingPea",
+					"CarnieGeneralAudioGroup"
+    ],
+    "Loot": "RTID(DefaultLoot@LevelModules)",
+    "Modules": [
+        "RTID(GI@.)",
+        "RTID(IZP@.)",
+        "RTID(Posters@.)",
+        "RTID(SeedBank@.)",
+        "RTID(VaseBreakerArcade@LevelModules)",
+        "RTID(VaseBreakerProps@.)",
+        "RTID(ZombiesDeadWinCon@LevelModules)",
+        "RTID(DefaultZombieWinCondition@LevelModules)"
+    ],
+    "Name": "[VASEBREAKER_CARNIVAL_LEVEL_NAME_1]",
+    "StageModule": "RTID(CarnivalStage@LevelModules)",
+    "MusicType": "MiniGame_C"
+}},
+{"aliases": ["SeedBank"],
+"objclass": "SeedBankProperties",
+"objdata": {
+    "PresetPlantList": [
+        {"PlantType": "wallnut", "Level":-1},
+        {"PlantType": "squash", "Level":-1}
+    ],
+    "SelectionMethod": "preset"
+}},
+{"aliases": ["VaseBreakerProps"],
+"objclass": "VaseBreakerPresetProperties",
+"objdata": {
+    "VaseGridItemType": "vase",
+    "MinColumnIndex": 4,
+    "MaxColumnIndex": 8,
+    "GridSquareExcludelist": [],
+    "Vases": [
+        {"ZombieTypeName": "carnie_mirror", "Count": 11},
+        {"ZombieTypeName": "carnie_armor1", "Count": 3},
+        {"ZombieTypeName": "carnie_magician", "Count": 1},
+        {"PlantTypeName": "peashooter", "Count": 8},
+        {"CollectableTypeName": "sun", "Count": 2}
+    ],
+    "NumColoredPlantVases": 3
+}},
+{"aliases": ["Posters"],
+"objclass": "CarniePosterModuleProperties",
+"objdata": {
+    "LeftPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_MIRROR_LEFT",
+    "RightPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_SMOKEANDMIRRORS_RIGHT"
+}},
+{"aliases":["GI"],
+"objclass":"InitialGridItemProperties",
+"objdata":{
+    "InitialGridItemPlacements": [
+        {"GridX": 0, "GridY": 0, "TypeName":"carnie_card_unactivated"},
+        {"GridX": 0, "GridY": 1, "TypeName":"carnie_card_unactivated"},
+        {"GridX": 0, "GridY": 2, "TypeName":"carnie_card_unactivated"},
+        {"GridX": 0, "GridY": 3, "TypeName":"carnie_card_unactivated"},
+        {"GridX": 0, "GridY": 4, "TypeName":"carnie_card_unactivated"},
+        {"GridX": 4, "GridY": 6, "TypeName":"carnie_minigame_starter"}
+    ]
+}},
+{"aliases":["IZP"],
+"objclass": "InitialZombieProperties",
+"objdata": {
+    "InitialZombiePlacements": [    
+        {"GridX": 4, "GridY": 6, "TypeName":"cardio_template_11"}
+    ]
+}},
+		{
+			"aliases": [
+				"CardioTemplate11Props"
+			],
+			"objclass": "ZombieGeneralTreadmillProps",
+			"objdata": {
+				"Actions": [
+					"RTID(GeneralEnteringIdle@ZombieActions)",
+					"RTID(IdleAction@.)",
+					"RTID(SpawnCards@.)"
+				],
+				"LifetimeSeconds": 99999,
+				"ArtCenter": {
+					"x": 99999,
+					"y": 99999
+				},
+				"ShadowOffset": {
+					"x": 0,
+					"y": 0,
+					"z": 0
+				},
+				"AttackRect": {
+					"mHeight": 95,
+					"mWidth": 60,
+					"mX": 0,
+					"mY": 99999
+				},
+				"HitRect": {
+					"mHeight": 95,
+					"mWidth": 110,
+					"mX": 10,
+					"mY": 0
+				},
+				"CollideHypnotizedZombies": "ignore",
+				"CanSurrender": true,
+				"EatDPS": 100,
+				"GroundTrackName": "ground_swatch",
+				"Hitpoints": 1,
+				"Speed": 3.0
+			}
+		},
+		{
+			"objclass": "ZombieIdleActionDefinition",
+			"aliases": [
+				"IdleAction"
+			],
+			"objdata": {
+				"Weight": 1,
+				"RepeatMin": 0,
+				"RepeatMax": 0,
+				"Phase": "Attacking",
+				"MinDuration": 99999,
+				"MaxDuration": 99999,
+				"AnimationToPlay": "die",
+				"Invulnerable": false,
+				"CanPickAgain": true
+			}
+		},
+		{
+			"objclass": "ZombieSpawnGridItemActionDefinition",
+			"aliases": [
+				"SpawnCards"
+			],
+			"objdata": {
+				"Weight": 10,
+				"RepeatMin": 0,
+				"RepeatMax": 0,
+				"Phase": "Dying",
+				"PhaseAfter": "Destroy",
+				"SpawnAnimation": "die",
+				"SpawnDelay": 0,
+				"Pool": [
+					{
+						"Count": 3,
+						"Type": "RTID(carnie_card_armor2@GridItemTypes)"
+					},
+					{
+						"Count": 2,
+						"Type": "RTID(carnie_card_armor4@GridItemTypes)"
+					}
+				],
+				"SpawnPositions": [
+					{
+						"mX": 0,
+						"mY": 0
+					},
+					{
+						"mX": 0,
+						"mY": 1
+					},
+					{
+						"mX": 0,
+						"mY": 2
+					},
+					{
+						"mX": 0,
+						"mY": 3
+					},
+					{
+						"mX": 0,
+						"mY": 4
+					}
+				],
+				"DestroyPositions": [
+					{
+						"mX": 0,
+						"mY": 0
+					},
+					{
+						"mX": 0,
+						"mY": 1
+					},
+					{
+						"mX": 0,
+						"mY": 2
+					},
+					{
+						"mX": 0,
+						"mY": 3
+					},
+					{
+						"mX": 0,
+						"mY": 4
+					}
+				],
+				"DestroyTypenames": {
+					"List": [
+						"carnie_card_unactivated"
+					],
+					"ListType": "includelist"
+				},
+				"UseActionToSpawn": true,
+				"SpawnActionName": "use_action",
+				"SpawnEffectAnimID": "POPANIM_EFFECTS_WITCH_HAZEL_ATTACK_CARNIE",
+				"SpawnEffectAnimPlay": "animation",
+				"SpawnEffectOffset": {
+					"x": -65,
+					"y": -50
+				},
+				"SoundOnStart": "Play_UI_Grave_Spawn",
+				"DestroyEffectAnimID": "",
+				"DestroyEffectAnimPlay": "",
+				"DestroyEffectOffset": {
+					"x": 0,
+					"y": 0
+				}
+			}
+		},
+        {}
+    ],
+    "version": 1
+}
