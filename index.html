@@ -4,17 +4,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blight of Hand Minigame Generator</title>
     <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ===== Blight of Hand — "sheet" theme (plum / pink, dotted cells) ===== */
+/* Each section borrows the look of one sheet.
+   p9 darkest accent | p7 header bars (text p7t) | p5 label cells (text p5t)
+   p3 canvas | p1 input fields | --line/--dash cell borders                */
+
+/* Blight of Hand (plum, dotted): page chrome, hats, swap patterns */
+:root, .theme-boh, .choice-group, .pattern-editor, .wave-container h3 {
+    --p9: #4c1130; --p7: #a64d79; --p5: #c27ba0; --p3: #d5a6bd; --p1: #ead1dc;
+    --p7t: #000; --p5t: #000;
+    --bar: #a64d79; --bar-text: #000;
+    --title-bg: #ead1dc; --title-text: #4c1130;
+    --line: #4c1130; --dash: dotted; --ink: #000; --mute: #666;
 }
+/* Settings sheet (red): load file, level settings, plants, modules, flags */
+.theme-settings {
+    --p9: #660000; --p7: #e06666; --p5: #ea9999; --p3: #f4cccc; --p1: #f1bbbb;
+    --p7t: #660000; --p5t: #660000;
+    --bar: #660000; --bar-text: #ea9999;
+    --line: #e06666; --dash: dashed; --ink: #000; --mute: #666;
+}
+/* Waves sheet (grey): zombie pool, waves, zombie rows */
+.theme-waves, .zombie-grid {
+    --p9: #434343; --p7: #666666; --p5: #999999; --p3: #cccccc; --p1: #b7b7b7;
+    --p7t: #fff; --p5t: #000;
+    --bar: #434343; --bar-text: #fff;
+    --line: #a7a7a7; --dash: dashed; --ink: #000; --mute: #666;
+}
+/* Level Code sheet (green): JSON output */
+.theme-code {
+    --p9: #274e13; --p7: #5d9245; --p5: #a6bb9d; --p3: #b6d7a8; --p1: #bcddae;
+    --p7t: #fff; --p5t: #274e13;
+    --bar: #38761d; --bar-text: #cccccc;
+    --title-bg: #b9d677; --title-text: #38761d;
+    --line: #6aa84f; --dash: dashed; --ink: #274e13; --mute: #38761d;
+}
+/* derived values, recomputed inside every theme scope */
+:root, .theme-boh, .theme-settings, .theme-waves, .theme-code,
+.choice-group, .pattern-editor, .wave-container h3, .zombie-grid {
+    --dot: 1px var(--dash) var(--line);
+    --hover: color-mix(in srgb, var(--p5) 82%, #fff);
+    --in-hover: color-mix(in srgb, var(--p1) 80%, #fff);
+    --in-focus: color-mix(in srgb, var(--p1) 60%, #fff);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    padding: 20px;
+    font-size: 13px;
+    background-color: var(--p9);
+    color: var(--ink);
+    padding: 14px;
 }
 
 .container {
@@ -22,807 +64,550 @@ body {
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 14px;
 }
 
+/* ---------- panels ---------- */
 .panel {
-    background-color: #2d2d2d;
-    border: 1px solid #404040;
-    border-radius: 4px;
-    padding: 20px;
+    background-color: #4c1130;
+    border: var(--dot);
+    padding: 0 0 12px;
     overflow-y: auto;
-    max-height: 80vh;
+    max-height: 90vh;
+    scrollbar-width: thin;
+    scrollbar-color: var(--p7) var(--p3);
 }
+.panel > * { margin-left: 8px; margin-right: 8px; }
+.panel > h1 { margin-left: 0; margin-right: 0; }
+.sheet-section { margin: 8px; padding: 0 0 8px; background-color: var(--p3); border: var(--dot); }
+.sheet-section > * { margin-left: 8px; margin-right: 8px; }
+.sheet-section > h2 { margin-left: 0; margin-right: 0; }
+.sheet-section > h2:first-child { margin-top: 0; border-top: none; }
+.left-panel > .success-message { margin: 8px; }
+.left-panel  { grid-column: 1; }
+.right-panel { grid-column: 2; display: flex; flex-direction: column; }
 
-.left-panel {
-    grid-column: 1;
-}
-
-.right-panel {
-    grid-column: 2;
-    display: flex;
-    flex-direction: column;
-    color: #ffffff;
-    background-color: #51ae3b;
-}
-
-h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #404040;
-    padding-bottom: 10px;
-}
-
-h2 {
-    font-size: 18px;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 5px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
+/* ---------- headings ---------- */
+h1 {                                   /* sheet title banner (s1) */
+    background-color: var(--title-bg);
+    color: var(--title-text);
+    font-size: 16pt;
     font-weight: bold;
+    text-align: center;
+    padding: 8px 6px;
+    margin-bottom: 8px;
+    border: none;
+    position: sticky; top: 0; z-index: 5;
+    border-bottom: var(--dot);
+}
+h2 {                                   /* section bar (s3 / s15) */
+    background-color: var(--bar);
+    color: var(--bar-text);
+    font-size: 13px;
+    font-weight: bold;
+    padding: 4px 8px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    border-top: var(--dot);
+    border-bottom: var(--dot);
+}
+h3 {
+    background-color: var(--p5);
+    color: var(--p5t);
+    font-size: 12px !important;
+    font-weight: bold;
+    padding: 3px 8px;
+    margin: 12px 0 8px !important;
+    border-bottom: var(--dot);
+    border-right: var(--dot);
 }
 
-input[type="text"],
-input[type="number"],
-select,
-textarea {
+/* ---------- form cells ---------- */
+.form-group { margin-bottom: 8px; }
+
+label {                                /* label cell (s10) */
+    display: block;
+    margin: 0;
+    padding: 3px 8px;
+    background-color: var(--p5);
+    color: var(--p5t);
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom: var(--dot);
+    border-right: var(--dot);
+}
+/* checkbox labels read as a plain row, not a header cell */
+label:has(> input[type="checkbox"]),
+.checkbox-item label {
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; border: none; padding: 2px 0;
+}
+
+input[type="text"], input[type="number"], select, textarea,
+input[list], input:not([type]) {
     width: 100%;
-    padding: 8px;
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    border: 1px solid #404040;
-    border-radius: 3px;
+    padding: 5px 7px;
+    background-color: var(--p1);
+    color: var(--ink);
+    border: var(--dot);
+    border-radius: 0;
     font-family: Arial, sans-serif;
     font-size: 13px;
 }
-
-input[type="text"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
-    outline: none;
-    border-color: #0e639c;
-    background-color: #262626;
+input[type="text"]:hover, input[type="number"]:hover, select:hover, textarea:hover { background-color: var(--in-hover); }
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus,
+input[list]:focus {
+    outline: 2px solid var(--p9);
+    outline-offset: -2px;
+    background-color: var(--in-focus);
 }
-
-textarea {
-    resize: vertical;
-    min-height: 100px;
-    font-family: monospace;
+input[type="file"] {
+    width: 100%; padding: 5px; background: var(--p1); border: var(--dot);
+    font-size: 12px; color: var(--ink);
 }
-
-.checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 10px;
+input[type="file"]::file-selector-button {
+    background: var(--p7); color: var(--ink); font-weight: bold;
+    border: 1px solid var(--p9); padding: 4px 10px; margin-right: 8px; cursor: pointer;
 }
-
-.checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+textarea { resize: vertical; min-height: 100px; font-family: monospace; }
+select option { background: var(--p1); color: var(--ink); }
 
 input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: #2d6e2e
+    width: 18px; height: 18px; cursor: pointer; flex: 0 0 auto;
+    accent-color: var(--p9);
+}
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-bottom: 4px; }
+.checkbox-item { display: flex; align-items: center; gap: 6px; }
+
+small { display: block; color: var(--mute); font-size: 11px; margin-top: 2px; }
+code {
+    background: var(--p1); color: var(--p9);
+    border: var(--dot); padding: 0 4px;
+    font-family: monospace; font-size: 11px;
 }
 
+/* ---------- buttons ---------- */
 button {
-    padding: 10px 15px;
-    margin-right: 10px;
-    margin-bottom: 10px;
-    background-color: #0e639c;
-    color: white;
-    border: none;
-    border-radius: 3px;
+    padding: 7px 12px;
+    margin: 0 6px 6px 0;
+    background-color: var(--p7);
+    color: var(--p7t);
+    border: 1px solid var(--p9);
+    border-radius: 0;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
 }
+button:hover  { background-color: var(--p5); color: var(--p5t); }
+button:active { background-color: var(--p9); color: var(--p1); }
+button.secondary { background-color: var(--p5); color: var(--p5t); }
+button.secondary:hover { background-color: var(--p1); }
+button.danger { background-color: var(--p9); color: var(--p1); border-color: var(--p9); }
+button.danger:hover { background-color: #000; color: #fff; }
 
-button:hover {
-    background-color: #1177bb;
-}
-
-button:active {
-    background-color: #0a4d7c;
-}
-
-button.secondary {
-    background-color: #6B8829;
-    color: #A4E289;
-}
-
-button.secondary:hover {
-    background-color: #4a4a4e;
-}
-
-button.danger {
-    background-color: #d13438;
-}
-
-button.danger:hover {
-    background-color: #e81123;
-}
-
+/* ---------- wave / hat / pattern containers ---------- */
 .wave-container {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 3px;
-    padding: 15px;
-    margin-bottom: 15px;
-}
-
-.wave-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background-color: var(--p3);
+    border: var(--dot);
+    padding: 0 8px 8px;
     margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
 }
-
-.wave-title {
-    font-weight: bold;
-    font-size: 15px;
+.wave-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 0 -8px 8px;
+    padding: 4px 8px;
+    background-color: var(--p7);
+    color: var(--p7t);
+    border-bottom: var(--dot);
 }
+.wave-header button { margin: 0; }
+.wave-title { font-weight: bold; font-size: 14px; cursor: pointer; user-select: none; }
+.wave-title::before { content: "\25BE  "; display: inline-block; white-space: pre; }
+.wave-container.collapsed .wave-title::before { content: "\25B8  "; white-space: pre; }
+.wave-container.collapsed > :not(.wave-header) { display: none; }
+.wave-container.collapsed { padding-bottom: 0; }
 
 .indent-section {
-    margin-left: 10px;
-    padding-left: 10px;
-    border-left: 2px solid #333;
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 2px dotted var(--p9);
 }
 
 .choice-group {
-    background-color: #262626;
-    border: 1px solid #333;
-    border-radius: 3px;
-    padding: 10px;
-    margin-bottom: 10px;
-    margin-top: 8px;
+    background-color: var(--p3);
+    border: var(--dot);
+    padding: 0 6px 6px;
+    margin: 8px 0;
 }
-
 .choice-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-weight: bold;
-    font-size: 13px;
-    cursor: pointer;
-    padding: 6px;
-    background-color: #1a1a1a;
-    border-radius: 3px;
-    user-select: none;
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 0 -6px 8px;
+    padding: 4px 8px;
+    background-color: var(--p5);
+    color: var(--p5t);
+    border-bottom: var(--dot);
+    font-weight: bold; font-size: 13px;
+    cursor: pointer; user-select: none;
 }
-
-.choice-header:hover {
-    background-color: #222;
-}
-
-.choice-header .toggle-icon {
-    display: inline-block;
-    transition: transform 0.2s;
-}
-
-.choice-header.collapsed .toggle-icon {
-    transform: rotate(-90deg);
-}
-
-.choice-content {
-    transition: max-height 0.3s ease, opacity 0.3s ease;
-    overflow: hidden;
-    max-height: 1000px;
-}
-
-.choice-content.collapsed {
-    max-height: 0;
-    opacity: 0;
-}
-
-.choice-controls {
-    display: flex;
-    gap: 4px;
-}
-
-.choice-controls button {
-    padding: 4px 6px;
-    font-size: 11px;
-    margin-right: 0;
-}
+.choice-header:hover { background-color: var(--hover); }
+.choice-header .preview-label { color: var(--p9) !important; font-weight: normal; }
+.choice-header .toggle-icon { display: inline-block; transition: transform .2s; }
+.choice-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+.choice-content { transition: max-height .3s ease, opacity .3s ease; overflow: hidden; max-height: 1000px; }
+.choice-content.collapsed { max-height: 0; opacity: 0; }
+.choice-controls { display: flex; gap: 3px; }
+.choice-controls button { padding: 2px 7px; font-size: 12px; margin: 0; }
 
 .pattern-editor {
-    background-color: #0d0d0d;
-    border: 1px solid #3a3a3a;
-    border-radius: 3px;
-    padding: 10px;
+    background-color: var(--p3);
+    border: var(--dot);
+    padding: 0 6px 6px;
     margin-bottom: 8px;
 }
-        .pattern-second-item {
-    background-color: #662815;
-    color: #FF9999;
-    padding: 6px 10px;
-    border-radius: 3px;
-    border: 1px solid #991F1F;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: grab;
-    user-select: none;
-    transition: all 0.2s ease;
-}
-
-.pattern-second-item:hover {
-    background-color: #7a3a1a;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.pattern-second-item.dragging {
-    opacity: 0.5;
-    transform: scale(0.98);
-}
-
-.pattern-second-item .drag-handle {
-    cursor: grab;
-    font-weight: bold;
-    color: #FF9999;
-}
-
-.pattern-second-item input {
-    background-color: #551F0F;
-    color: #FF9999;
-    border: 1px solid #991F1F;
-    padding: 3px 5px;
-    border-radius: 2px;
-    font-size: 11px;
-    width: 40px;
-    text-align: center;
-}
-
-.pattern-second-item button {
-    background-color: #992222;
-    color: #ffcccc;
-    border: none;
-    padding: 2px 6px;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 10px;
-}
-
-.pattern-second-item button:hover {
-    background-color: #bb3333;
-}
-
 .pattern-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 6px;
-    background-color: #1a1a1a;
-    border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 0 -6px 8px; padding: 4px 8px;
+    background-color: var(--p5); color: var(--p5t); border-bottom: var(--dot);
+    cursor: pointer; user-select: none; font-weight: bold;
 }
+.pattern-header:hover { background-color: var(--hover); }
+.pattern-header .toggle-icon { display: inline-block; transition: transform .2s; }
+.pattern-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+.pattern-content { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pattern-field { display: flex; flex-direction: column; gap: 3px; }
+.pattern-field label { font-size: 12px; }
+.pattern-field input, .pattern-field select { font-size: 13px; padding: 4px 6px; }
+.pattern-controls { grid-column: 1 / -1; display: flex; gap: 4px; margin-top: 6px; }
+.pattern-controls button { flex: 1; padding: 4px 6px; font-size: 12px; margin: 0; }
+.array-input { font-family: monospace; font-size: 12px; }
 
-.pattern-header:hover {
-    background-color: #222;
+/* First / Second position lists and their draggable chips */
+.pattern-first-list, .pattern-second-list {
+    background-color: var(--p1);
+    border: var(--dot);
+    padding: 6px; margin-top: 4px; min-height: 40px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;
 }
-
-.pattern-header .toggle-icon {
-    display: inline-block;
-    transition: transform 0.2s;
+.pattern-first-item, .pattern-second-item {
+    background-color: var(--p5);
+    color: var(--ink);
+    padding: 4px 8px;
+    border: var(--dot);
+    display: flex; align-items: center; gap: 6px;
+    cursor: grab; user-select: none;
+    transition: transform .15s ease, box-shadow .15s ease;
 }
-
-.pattern-header.collapsed .toggle-icon {
-    transform: rotate(-90deg);
-}
-
-.pattern-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.pattern-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.pattern-field label {
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.pattern-field input,
-.pattern-field select {
-    font-size: 12px;
-    padding: 4px;
-}
-
-.array-input {
-    font-family: monospace;
-    font-size: 11px;
-}
-
-.pattern-first-item {
-    background-color: #662815;
-    color: #FF9999;
-    padding: 6px 10px;
-    border-radius: 3px;
-    border: 1px solid #991F1F;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: grab;
-    user-select: none;
-    transition: all 0.2s ease;
-}
-
-.pattern-first-item:hover {
-    background-color: #7a3a1a;
+.pattern-first-item:hover, .pattern-second-item:hover {
+    background-color: var(--hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 0 var(--p9);
 }
-
-.pattern-first-item.dragging {
-    opacity: 0.5;
-    transform: scale(0.98);
+.pattern-first-item.dragging, .pattern-second-item.dragging { opacity: .5; transform: scale(.98); }
+.pattern-first-item .drag-handle, .pattern-second-item .drag-handle { cursor: grab; font-weight: bold; color: var(--p9); }
+.pattern-first-item input, .pattern-second-item input {
+    width: 44px; padding: 3px 4px; text-align: center; font-size: 13px;
+    background-color: var(--p1); color: var(--ink); border: var(--dot);
 }
-
-.pattern-first-item .drag-handle {
-    cursor: grab;
-    font-weight: bold;
-    color: #FF9999;
+.pattern-first-item button, .pattern-second-item button {
+    margin: 0; padding: 2px 6px; font-size: 11px;
+    background-color: var(--p9); color: var(--p1); border: none;
 }
+.pattern-first-item button:hover, .pattern-second-item button:hover { background-color: #000; }
 
-.pattern-first-item input {
-    background-color: #551F0F;
-    color: #FF9999;
-    border: 1px solid #991F1F;
-    padding: 3px 5px;
-    border-radius: 2px;
-    font-size: 11px;
-    width: 40px;
-    text-align: center;
+/* help / tutorial / custom position boxes (were green + black inline) */
+.pattern-tutorial, .custom-positions-section, .custom-hat-positions-section {
+    background-color: var(--p1) !important;
+    border-left: 4px solid var(--p7) !important;
+    border-top: var(--dot); border-right: var(--dot); border-bottom: var(--dot);
+    color: var(--ink);
 }
+.pattern-tutorial summary { color: var(--p9); font-weight: bold; cursor: pointer; }
+.pattern-tutorial strong { color: var(--p9); }
+.pattern-tutorial > details > div { color: #333; }
+.toggle-help { background-color: var(--p1); border: var(--dot); padding: 0 5px; cursor: pointer; }
+.help-box { background: var(--p1); border-left: 4px solid var(--p7); border: var(--dot); padding: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+.help-box h3 { margin: 0 0 6px !important; }
+.help-box p { margin-bottom: 6px; }
+.help-box .example { background: var(--p3); padding: 6px; margin: 6px 0; font-family: monospace; font-size: 12px; border-left: 2px solid var(--p9); }
+#helpContent { max-height: 500px; overflow-y: auto; }
+.shuffle-demo { display: flex; gap: 8px; margin: 6px 0; align-items: center; font-family: monospace; }
+.hat { background: var(--p5); border: var(--dot); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.arrow { color: var(--p9); font-weight: bold; }
 
-.pattern-first-item button {
-    background-color: #992222;
-    color: #ffcccc;
-    border: none;
-    padding: 2px 6px;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 10px;
-}
-
-.pattern-first-item button:hover {
-    background-color: #bb3333;
-}
-
-.pattern-controls {
-    grid-column: 1 / -1;
-    display: flex;
-    gap: 4px;
-    margin-top: 6px;
-}
-
-.pattern-controls button {
-    flex: 1;
-    padding: 4px 6px;
-    font-size: 11px;
-}
-
-.json-output {
-    background-color: #365728;
-    /* border: 1px solid #404040; */
-    border-radius: 3px;
-    padding: 15px;
-    color: #C5ECB1;
-    font-weight: bold;
-    flex: 1;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 10px;
-    white-space: pre-wrap;
-    word-break: break-all;
-}
-
-.button-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
-
-.success-message {
-    background-color: #1e4620;
-    border: 1px solid #2d6e2e;
-    color: #4ec9b0;
-    padding: 10px;
-    border-radius: 3px;
-    margin-bottom: 10px;
-    display: none;
-}
-
-.success-message.show {
-    display: block;
-}
-
-.help-box {
-    background-color: #1a1a1a;
-    border-left: 4px solid #0e639c;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 3px;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.help-box h3 {
-    color: #0e9eff;
+/* ---------- plants / modules / resource groups / module definitions ---------- */
+[data-plant-item], [data-module-item], [data-moduledef-item], [data-resourcegroup-item] {
     margin-bottom: 8px;
-    font-size: 14px;
+    padding: 0 6px 6px;
+    background-color: var(--p3) !important;
+    color: var(--ink) !important;
+    border: var(--dot) !important;
+    border-radius: 0 !important;
 }
-
-.help-box p {
-    margin-bottom: 8px;
+[data-plant-item] > div:first-child, [data-module-item] > div:first-child,
+[data-moduledef-item] > div:first-child, [data-resourcegroup-item] > div:first-child {
+    margin: 0 -6px 6px !important;
+    padding: 3px 8px;
+    background-color: var(--p7);
+    color: var(--p7t);
+    border-bottom: var(--dot);
 }
+[data-plant-item] button.danger, [data-module-item] button.danger,
+[data-moduledef-item] button.danger, [data-resourcegroup-item] button.danger { margin: 0; }
+.plantType, .moduleName, .resourceGroupName, .moduleDefCode { width: 100%; font-weight: bold; }
+.moduleDefCode { font-weight: normal; font-family: monospace; font-size: 12px; }
+[data-plant-item] label { margin-bottom: 0; }
 
-.help-box .example {
-    background-color: #0d0d0d;
-    padding: 8px;
-    margin: 8px 0;
-    border-radius: 2px;
-    font-family: monospace;
-    font-size: 12px;
-    border-left: 2px solid #2d7a2d;
+/* ---------- zombie pool ---------- */
+.zombie-pool-section { background-color: var(--p3); border: var(--dot); padding: 0 0 8px; margin: 0 0 12px; }
+.zombie-pool-title {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin: 0 0 8px; padding: 4px 8px;
+    background-color: var(--bar); color: var(--bar-text);
+    border-bottom: var(--dot); font-weight: bold; font-size: 14.6px;
 }
-
-.shuffle-demo {
-    display: flex;
-    gap: 8px;
-    margin: 8px 0;
-    align-items: center;
-    font-family: monospace;
+.zombie-pool-title span { color: var(--p5) !important; font-weight: bold !important; }
+.zombie-pool-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 0; padding: 0; margin: 0 8px;
+    background-color: var(--p3);
+    border-top: var(--dot); border-left: var(--dot);
 }
-
-.hat {
-    background-color: #2d4a2d;
-    border: 1px solid #4a7a4a;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-    font-weight: bold;
-    color: #a0ffa0;
+.zombie-pool-cell { background-color: var(--p3); padding: 0; min-height: 30px; border-right: var(--dot); border-bottom: var(--dot); }
+.zombie-pool-cell input[type="text"] {
+    height: 100%; padding: 5px 4px; font-size: 12px; font-weight: bold;
+    text-align: center; border: none; background: transparent;
 }
+.zombie-pool-cell input[type="text"]:hover { background: var(--in-hover); }
+.zombie-pool-cell input[type="text"]:focus { outline: 2px solid var(--p9); outline-offset: -2px; background: var(--in-focus); }
 
-.arrow {
-    color: #ff6b6b;
-    font-weight: bold;
-}
-
-.toggle-help {
-    background-color: #3e3e42;
-    padding: 2px 6px;
-    border-radius: 2px;
-    font-size: 11px;
-    cursor: pointer;
-}
-
-#helpContent {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
+/* ---------- spawned-zombie rows (Waves sheet: index cell + dashed grey cells) ---------- */
 .zombie-grid {
-    margin-top: 8px;
-    background-color: #999999;
-    /* border: 1px solid #333; */
-    border-radius: 3px;
-    overflow-x: auto;
-    overflow-y: visible;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    /* padding: 1px; */
-    padding: 1px;
-    width: 100%;
-    max-width: 100%;
-    scrollbar-width: thin;
-    scrollbar-color: #484848 #999999;
+    margin-top: 6px;
+    background-color: var(--p3);
+    border: var(--dot);
+    display: flex; flex-direction: column; gap: 0; padding: 0;
+    width: 100%; max-width: 100%;
+    overflow-x: auto; overflow-y: visible;
+    scrollbar-width: thin; scrollbar-color: var(--p7) var(--p3);
 }
-
-.zombie-grid > div {
-    flex-shrink: 0;
-    min-width: min-content;
-}
-
-.zombie-grid::-webkit-scrollbar {
-    height: 8px;
-}
-
-.zombie-grid::-webkit-scrollbar-track {
-    background: #999999;
-    border-radius: 3px;
-}
-
-.zombie-grid::-webkit-scrollbar-thumb {
-    background: #484848;
-    border-radius: 3px;
-}
-
-.zombie-grid::-webkit-scrollbar-thumb:hover {
-    background: #666;
-}
-
+.zombie-grid > div { flex-shrink: 0; min-width: min-content; gap: 0 !important; }
+.zombie-grid > div > div:last-child { gap: 0 !important; }
+.zombie-grid::-webkit-scrollbar { height: 8px; }
+.zombie-grid::-webkit-scrollbar-track { background: var(--p3); }
+.zombie-grid::-webkit-scrollbar-thumb { background: var(--p7); }
 .zombie-grid-header {
-    background-color: #999999;
-    /* padding: 8px; */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 12px;
-    color: #000;
-    /* border-right: 1px solid #333; */
-    min-height: 5px;
+    background-color: var(--p7); color: var(--p7t);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 13px; align-self: stretch;
+    border-right: var(--dot);
 }
-
 .zombie-grid-cell {
-    background-color: #484848;
-    /* padding: 6px; */
-    display: flex;
-    flex-direction: row-reverse;
-    gap: 0;
-    min-height: 1px;
-    border: 1.25px dashed #99999999;
-    flex-wrap: nowrap;
-    align-content: stretch;
-    justify-content: space-evenly;
-    align-items: center;
+    background-color: var(--p1);
+    display: flex; flex-direction: row; align-items: center;
+    gap: 3px; padding: 0 3px 0 0; min-height: 30px;
+    border-right: var(--dot); border-bottom: var(--dot);
 }
-
-.zombie-grid-cell input[type="text"] {
-    flex: 1;
-    height: 100%;
-    padding: 4px;
-    background-color: #484848;
-    font-weight: bolder;
-    color: #ffffff;
-    border: 1px solid #484848;
-    border-radius: 2px;
-    font-size: 12px;
+.zombie-grid-cell > div { width: 100%; }
+.zombie-grid-cell input[type="text"], .zombie-type-select, .zombie-coord-type {
+    flex: 1; min-width: 70px; padding: 5px 4px;
+    background-color: transparent; color: var(--ink);
+    font-weight: bold; font-size: 12px; border: none; border-radius: 0;
 }
-
-.zombie-grid-cell input[type="text"]:focus {
-    outline: none;
-    border-color: #0e639c;
-    background-color: #2d2d2d;
-}
-
-.zombie-grid-cell select:focus {
-    outline: none;
-    border-color: #0e639c;
-    background-color: #2d2d2d;
-}
-
-.zombie-grid-cell-pf {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-}
-
-.zombie-grid-cell-pf input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-}
+.zombie-grid-cell input[type="text"]:hover { background-color: var(--in-hover); }
+.zombie-grid-cell input[type="text"]:focus { outline: 2px solid var(--p9); outline-offset: -2px; background-color: var(--in-focus); }
+.zombie-pf-check { width: 15px; height: 15px; }
+.zombie-grid-cell-pf { display: flex; align-items: center; gap: 3px; font-size: 10px; }
 
 .zombie-coordinate-mode {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 3px;
-    scrollbar-width: thin;
-    scrollbar-color: #484848 #1a1a1a;
+    margin-top: 8px; padding: 6px;
+    background-color: var(--p1) !important;
+    border: var(--dot);
+    border-radius: 0 !important;
+    scrollbar-width: thin; scrollbar-color: var(--p7) var(--p1);
 }
-
-.zombie-coordinate-mode::-webkit-scrollbar {
-    width: 6px;
-}
-
-.zombie-coordinate-mode::-webkit-scrollbar-track {
-    background: #1a1a1a;
-}
-
-.zombie-coordinate-mode::-webkit-scrollbar-thumb {
-    background: #484848;
-    border-radius: 3px;
-}
-
-.zombie-coordinate-mode::-webkit-scrollbar-thumb:hover {
-    background: #666;
-}
-
-.zombie-coordinate-mode-header {
-    font-weight: bold;
-    font-size: 12px;
-    margin-bottom: 8px;
-    color: #0e9eff;
-}
-
+.zombie-coordinate-mode-header { font-weight: bold; font-size: 12px; margin-bottom: 6px; color: var(--p9); }
 .zombie-coord-item {
-    background-color: #262626;
-    border: 1px solid #333;
-    border-radius: 3px;
-    padding: 8px;
-    margin-bottom: 8px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr auto;
-    gap: 8px;
-    align-items: center;
+    background-color: var(--p3); border: var(--dot);
+    padding: 6px; margin-bottom: 6px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 6px; align-items: center;
 }
-
 .zombie-coord-item input {
-    padding: 4px;
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    border: 1px solid #404040;
-    border-radius: 2px;
-    font-size: 11px;
+    padding: 4px; background-color: var(--p1); color: var(--ink);
+    border: var(--dot); border-radius: 0; font-size: 12px; font-weight: bold;
 }
 
-.zombie-pool-section {
-    background-color: #2d2d2d;
-    border: 2px solid #0e639c;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
+/* ---------- drag & drop ---------- */
+.draggable-item { cursor: move; transition: transform .15s ease, box-shadow .15s ease; }
+.draggable-item:hover { transform: translateY(-1px); box-shadow: 0 3px 0 var(--p9); }
+.draggable-item.dragging { opacity: .5; transform: scale(.98); }
+.draggable-item.drag-over { border-top: 3px solid var(--p9) !important; padding-top: 5px; }
+
+/* ---------- output panel ---------- */
+.right-panel { background-color: var(--p3); }
+.right-panel > .button-row { margin-bottom: 8px; }
+.button-row { display: flex; gap: 6px; margin-top: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.button-row button { margin: 0; }
+.json-output {
+    --row: 16px;
+    background-color: var(--p3);
+    background-image: repeating-linear-gradient(to bottom, var(--p3) 0, var(--p3) var(--row), var(--p1) var(--row), var(--p1) calc(var(--row) * 2));
+    background-origin: content-box;
+    color: var(--ink);
+    border: var(--dot);
+    padding: 0 10px;
+    flex: 1; overflow-y: auto;
+    font-family: monospace; font-size: 11px; font-weight: bold;
+    line-height: var(--row);
+    white-space: pre-wrap; word-break: break-all;
+    scrollbar-width: thin; scrollbar-color: var(--p7) var(--p3);
 }
 
-.zombie-pool-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: #0e9eff;
-    margin-bottom: 10px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
+/* toast */
+.success-message {
+    display: none;
+    background-color: var(--p5); color: var(--p9);
+    border: var(--dot);
+    padding: 6px 10px; margin-bottom: 8px; font-weight: bold;
 }
+.success-message.show { display: block; }
+.success-message.error { background-color: var(--p9); color: var(--p1); }
 
-.zombie-pool-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 1px;
-    padding: 1px;
-    background-color: #333;
-    border-radius: 2px;
-}
+/* ---------- autocomplete menu (zombie inputs) ---------- */
+.zac-menu { position: absolute; z-index: 1000; background: var(--p1); border: 1px solid var(--p9); display: none; box-shadow: 3px 3px 0 var(--p9); min-width: 180px; }
+.zac-item { padding: 9px 12px; font-size: 14px; color: var(--ink); cursor: pointer; font-family: monospace; border-bottom: var(--dot); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zac-item:last-child { border-bottom: none; }
+.zac-item.active, .zac-item:hover { background: var(--p7); color: var(--p7t); }
 
-.zombie-pool-cell {
-    background-color: #1e1e1e;
-    padding: 6px;
-    min-height: 40px;
-}
-
-.zombie-pool-cell input[type="text"] {
-    width: 100%;
-    padding: 4px;
-    background-color: #262626;
-    color: #e0e0e0;
-    border: 1px solid #404040;
-    border-radius: 2px;
-    font-size: 11px;
-}
-
-.zombie-pool-cell input[type="text"]:focus {
-    outline: none;
-    border-color: #0e639c;
-    background-color: #2d2d2d;
-}
-
-.draggable-item {
-    cursor: move;
-    transition: all 0.2s ease;
-}
-
-.draggable-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.draggable-item.dragging {
-    opacity: 0.5;
-    transform: scale(0.98);
-}
-
-.draggable-item.drag-over {
-    border-top: 3px solid #0e9eff;
-    padding-top: 5px;
-}
-
-@media (max-width: 1200px) {
-    .container {
-        grid-template-columns: 1fr;
-    }
-    
-    .left-panel {
-        grid-column: 1;
-    }
-    
-    .right-panel {
-        grid-column: 1;
-    }
-}
-
-/* Collapsible waves: click a wave's title to fold its contents */
-.wave-title { cursor: pointer; user-select: none; }
-.wave-title::before { content: "\25BE  "; display: inline-block; }
-.wave-container.collapsed .wave-title::before { content: "\25B8  "; }
-.wave-container.collapsed > :not(.wave-header) { display: none; }
-.wave-container.collapsed { padding-bottom: 15px; }
-
-/* Desktop: keep the JSON output visible while editing on the left */
+/* ---------- desktop: keep JSON visible while editing ---------- */
 @media (min-width: 1201px) {
-    .container { gap: 24px; }
-    .right-panel { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); }
-    .panel button:not(.danger):hover, .panel .secondary:hover { filter: brightness(1.15); }
-    input[type="text"]:hover, input[type="number"]:hover, select:hover, textarea:hover { border-color: #666; }
+    .right-panel { position: sticky; top: 14px; align-self: start; max-height: calc(100vh - 28px); }
 }
 
-/* Sticky bottom action bar (phones only) */
+/* ---------- mobile ---------- */
 .mobile-actions { display: none; }
-@media (max-width: 600px) {
-    .mobile-actions { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); background: #1e1e1e; border-top: 1px solid #404040; }
-    .mobile-actions button { flex: 1; min-height: 44px; }
-}
-
-/* ---- Mobile improvements (added in combined build) ---- */
-html { -webkit-text-size-adjust: 100%; }
-/* 16px inputs stop iOS Safari from zooming in when you tap a field */
-input[type="text"], input[type="number"], select, textarea { font-size: 16px; }
 @media (max-width: 1200px) {
+    .container { grid-template-columns: 1fr; }
+    .left-panel, .right-panel { grid-column: 1; }
     .panel { max-height: none; overflow-y: visible; }
 }
 @media (max-width: 600px) {
-    body { padding: 10px; }
-    .container { gap: 12px; }
-    .panel { padding: 12px; }
-    button, .btn, input[type="button"], input[type="submit"] {
-        min-height: 40px;
-        padding: 10px 12px;
-        touch-action: manipulation;
-    }
-    input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
-    h1 { font-size: 1.4em; }
-    h2 { font-size: 1.2em; }
-    /* Let wide content scroll sideways instead of pushing the page wider than the screen */
+    body { padding: 8px; padding-bottom: 80px; }
+    .container { gap: 10px; }
+    h1 { font-size: 13pt; position: static; }
+    .pattern-content { grid-template-columns: 1fr; }
+    input[type="text"], input[type="number"], select, textarea { font-size: 16px; }
+    button { min-height: 40px; padding: 8px 12px; touch-action: manipulation; }
+    input[type="checkbox"] { width: 20px; height: 20px; }
     table, pre { display: block; overflow-x: auto; max-width: 100%; }
-    body { padding-bottom: 80px; }
+    .mobile-actions {
+        display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+        gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: var(--p9); border-top: 1px dotted var(--p5);
+    }
+    .mobile-actions button { flex: 1; min-height: 44px; margin: 0; }
 }
 
+.pos-cell{background:var(--p1);border:var(--dot);}
+
+/* ===== proportions taken from the sheets: ~170px label cells, 20px gutters, nested frames ===== */
+.container { max-width: 1680px; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+.sheet-section { padding: 0 20px 14px; border: 8px solid var(--p9); box-shadow: inset 0 0 0 8px var(--p7); margin: 8px 8px 12px; }
+.sheet-section > * { margin-left: 0; margin-right: 0; }
+.sheet-section > h2 { margin-left: -20px; margin-right: -20px; padding-left: 20px; }
+.sheet-section > h2:first-child { margin-top: 0; padding-top: 12px; }
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0 20px; }
+.sheet-grid > .form-group { min-width: 0; }
+#plantsContainer, #modulesContainer, #resourceGroupsContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0 20px; }
+[data-plant-item] label { display: none; }
+.checkbox-group { gap: 4px 20px; }
+.zombie-pool-grid { margin: 0; }
+/* Level Code: green frames, title block, bars and flat bold json boxes */
+.right-panel { background: #a6bb9d !important; padding: 14px !important; border: none; }
+.right-panel > * { margin: 0 !important; }
+.lc-frame { background: #38761d; padding: 14px; }
+.lc-mid { background: #5d9245; padding: 14px; }
+.lc-title { background: #b9d677; color: #38761d; text-align: center; font-weight: bold; padding: 10px 12px 6px; }
+.lc-title .lc-h { font-size: 16pt; padding-bottom: 4px; }
+.lc-title .button-row { justify-content: center; margin: 8px 0 4px; }
+.lc-bar { background: #6aa84f; color: #000; font-weight: bold; padding: 3px 6px; }
+.json-output, .lc-box, .lc-wave pre {
+    background: #b6d7a8 !important; background-image: none !important; color: #274e13;
+    font: bold 13px/1.35 Arial, sans-serif; white-space: pre-wrap; word-break: break-word;
+    border: none; padding: 2px 6px; margin: 0; flex: none;
+}
+.json-output { max-height: 520px; overflow: auto; min-height: 60px; }
+.lc-cols { display: grid; grid-template-columns: 1fr 1fr; margin-top: 8px; }
+.lc-box { max-height: 280px; overflow: auto; min-height: 40px; }
+.lc-wave { display: grid; grid-template-columns: 44px 1fr; }
+.lc-wavehead { margin-top: 8px; }
+.lc-wave .n { text-align: center; background: #6aa84f; }
+.lc-wave div.n:not(.lc-bar) { color: #38761d; background: #b6d7a8; font-weight: bold; padding: 2px 0; }
+.lc-wave.even pre, .lc-wave.even div.n:not(.lc-bar) { background: #bcddae !important; }
+.lc-wave pre { max-height: 220px; overflow: auto; }
+@media (max-width: 700px) { .lc-cols { grid-template-columns: 1fr; } .lc-frame, .lc-mid { padding: 8px; } .sheet-section { padding: 0 12px 12px; } .sheet-section > h2 { margin-left: -12px; margin-right: -12px; } }
+
+/* ===== bottom sheet tabs ===== */
+.container { max-width: 1200px; grid-template-columns: minmax(0, 1fr); }
+.left-panel, .right-panel { grid-column: 1 !important; }
+.panel { max-height: none !important; overflow: visible !important; }
+.right-panel { position: static !important; }
+body { padding-bottom: 56px; }
+.tab-pane { display: none !important; }
+.tab-pane.active { display: block !important; }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; display: flex; gap: 2px; padding: 4px 8px 0; background: #1c1c1c; overflow-x: auto; }
+.tabbar button { margin: 0; padding: 9px 22px; min-height: 0; border: none; border-radius: 6px 6px 0 0; font-size: 13px; font-weight: bold; opacity: .65; white-space: nowrap; }
+.tabbar button.active { opacity: 1; box-shadow: inset 0 3px 0 #fff; }
+.tabbar .t-waves { background: #666; color: #fff; } .tabbar .t-settings { background: #e06666; color: #660000; }
+.tabbar .t-boh { background: #a64d79; color: #000; } .tabbar .t-code { background: #5d9245; color: #fff; }
+.hdr3 { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+.hdr3 .mowers label { display: flex !important; background: var(--p5) !important; padding: 3px 8px !important; border-bottom: var(--dot) !important; border-right: var(--dot) !important; }
+@media (max-width: 600px) { .hdr3 { grid-template-columns: 1fr; } .mobile-actions { bottom: 40px; } body { padding-bottom: 120px; } }
+
+/* ===== sheet cells: label cell + flat tinted value cell on the same row ===== */
+:root, .theme-boh, .theme-settings, .choice-group, .pattern-editor, .wave-container h3 { --lab: var(--p7); --lab-t: var(--p7t); --val: var(--p5); }
+.theme-waves, .zombie-grid { --lab: var(--bar); --lab-t: var(--bar-text); --val: var(--p1); }
+input[type="text"], input[type="number"], select, textarea, input[list], input:not([type]) {
+    background-color: var(--val); font-weight: bold; border: var(--dot); padding: 4px 8px; min-height: 26px;
+}
+input[type="text"]:hover, input[type="number"]:hover, select:hover, textarea:hover { background-color: color-mix(in srgb, var(--val) 82%, #fff); }
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus, input[list]:focus { background-color: color-mix(in srgb, var(--val) 65%, #fff); }
+.form-group { display: grid; grid-template-columns: minmax(120px, 40%) minmax(0, 1fr); align-items: stretch; margin-bottom: 2px; }
+.form-group > label { background: var(--lab); color: var(--lab-t); border: none; padding: 4px 8px; display: flex; align-items: center; }
+.form-group > small { grid-column: 1 / -1; }
+.form-group > label:has(> input[type="checkbox"]) { grid-column: 1 / -1; flex-direction: row-reverse; justify-content: space-between; background: var(--lab) !important; color: var(--lab-t) !important; padding: 4px 8px !important; max-width: 340px; }
+.checkbox-group { gap: 2px 20px; }
+.checkbox-item { display: flex; align-items: stretch; gap: 0; flex: 0 1 300px; }
+.checkbox-item label { order: 1; flex: 1; background: var(--lab) !important; color: var(--lab-t) !important; padding: 4px 8px !important; }
+.checkbox-item input { order: 2; box-sizing: content-box; width: 18px; height: 18px; margin: 0; padding: 4px 9px; background: var(--val); }
+.sheet-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.sheet-section > h2:first-child { text-align: center; font-size: 16pt; padding: 6px 8px; }
+.theme-settings.sheet-section > h2:not(:first-child) { background: none; color: #000; border: none; font-size: 14px; padding: 6px 0 2px; margin: 10px 0 4px; }
+.choice-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2px 12px; align-content: start; }
+.choice-content > :not(.form-group) { grid-column: 1 / -1; }
+.wave-container > .form-group { max-width: 460px; }
+.zombie-pool-cell { background-color: var(--val); }
+.zombie-pool-section { margin: 0; }
+/* Waves tab: Zombies Pool left, level info right (as in the Waves sheet) */
+.waves-top { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 12px; }
+.hdr3 { grid-template-columns: 1fr 1fr !important; gap: 0 12px; }
+.hdr3 .form-group { display: block; }
+@media (max-width: 900px) { .waves-top { grid-template-columns: 1fr; } .form-group { grid-template-columns: 1fr; } }
+
+/* ===== final sweep ===== */
+.container { gap: 0; }
+.right-panel { margin: 0 8px !important; }
+.sheet-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.waves-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.theme-waves.sheet-section > h2:not(:first-child) { margin-left: 0; margin-right: 0; padding-left: 8px; }
+#modulesContainer { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; flex: none; margin: 0; padding: 0; background: var(--val); border: 1px solid var(--lab-t, #000); border-radius: 0; display: inline-grid; place-content: center; cursor: pointer; }
+input[type="checkbox"]:checked::after { content: "\2713"; font-size: 14px; font-weight: bold; line-height: 1; color: var(--lab-t, #000); }
+.checkbox-item input { box-sizing: border-box; width: 38px; height: auto; align-self: stretch; border: none; }
+.choice-content .form-group { grid-template-columns: auto minmax(80px, 1fr); }
+.choice-content { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.wave-container > .form-group { max-width: 560px; }
+@media (max-width: 900px) { .waves-top { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .hdr3 { grid-template-columns: 1fr !important; } .waves-top { gap: 12px; } .sheet-grid { grid-template-columns: 1fr; } .checkbox-item { flex-basis: 100%; } }
 </style>
 <style id="dark-reader-style" type="text/css">@media screen {
 html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms linear;}
@@ -838,31 +623,33 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
     <div class="container">
         <!-- Left Panel: Input Form -->
         <div class="panel left-panel">
-            <h1>Blight of Hand Generator</h1>
+            <h1>Blight of Hand Minigame Manager</h1>
             
             <div class="success-message" id="successMessage">✓ JSON Generated Successfully</div>
             
             <!-- Help Section -->
             
 
+            <section class="sheet-section theme-settings">
             <h2>Load File</h2>
             
             <div class="form-group">
                 <label for="fileInput">Or Open Your Own JSON File</label>
                 <input type="file" id="fileInput" accept=".json" onchange="loadJsonFile(this)">
-                <small style="color: #888;">Select a Blight of Hand JSON file to edit</small>
+                <small>Select a Blight of Hand JSON file to edit</small>
             </div>
             
             <!-- Level Settings -->
             <h2>Level Settings</h2>
             
+            <div class="sheet-grid">
             <div class="form-group">
                 <label for="levelNumber">Level Number</label>
                 <input type="number" id="levelNumber" value="1" min="1">
             </div>
             
             <div class="form-group">
-                <label for="levelName">Level Name (Localization Key)</label>
+                <label for="levelName">Level Name</label>
                 <input type="text" id="levelName" value="My Level" list="levelNameList" autocomplete="off">
                 <datalist id="levelNameList">
                     <option value="My Level"></option>
@@ -908,7 +695,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             </div>
             
             <div class="form-group">
-                <label for="musicType">Music Type</label>
+                <label for="musicType">Music</label>
                 <select id="musicType">
                     <option value="MiniGame_B">Demonstration Minigame (MiniGame_B)</option>
                     <option value="MiniGame_A">Ultimate Battle (MiniGame_A)</option>
@@ -919,13 +706,14 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             </div>
             
             <div class="form-group">
-                <label for="stageSelector">Game Stage</label>
+                <label for="stageSelector">Stage</label>
                 <select id="stageSelector"><option value="TutorialStage">Tutorial</option><option value="FrontLawnStage">Pinata Party</option><option value="EgyptStage">Ancient Egypt</option><option value="EgyptStageNoPowerUps">Ancient Egypt (No Powerups)</option><option value="PirateStage">Pirate Seas</option><option value="PirateAltverzStage">Pirate Seas (AltverZ)</option><option value="WestStage">Wild West</option><option value="FutureStage">Far Future</option><option value="DarkStage">Dark Ages</option><option value="DarkAltverzStage">Dark Ages (AltverZ)</option><option value="BeachStage">Big Wave Beach</option><option value="BeachStageNoPowerUps">Big Wave Beach (No Powerups)</option><option value="BeachAltverzStage">Big Wave Beach (AltverZ)</option><option value="IceageStage">Frostbite Caves</option><option value="IceageStageNoPowerUps">Frostbite Caves (No Powerups)</option><option value="IceageAltverzStage">Frostbite Caves (AltverZ)</option><option value="IceageVeteranStage">Hypothermic Hollows</option><option value="LostCityStage">Lost City</option><option value="LostCityVeteranStage">Lost City (Jams)</option><option value="LostCityStageNoPowerUps">Lost City (No Powerups)</option><option value="LostCityNightsStage">Lost City Night</option><option value="LostCityNightsVeteranStage">Lost City Night (Jams)</option><option value="EightiesStage">Neon Mixtape Tour</option><option value="EightiesAltverzStage">Neon Mixtape Tour (AltverZ)</option><option value="DinoStage">Jurassic Marsh</option><option value="ModernStage">Modern Day</option><option value="ModernStageNoPowerUps">Modern Day (No Powerups)</option><option value="Modern17Stage">Modern Day (Day 17)</option><option value="ModernAllJamsStage">Modern Day (All Jams)</option><option value="ModernNightStage">Modern Night</option><option value="ModernNightAllJamsStage">Modern Night (All Jams)</option><option value="ModernPoolStage">Modern Pool</option><option value="ValentineStage">Valenbrainz</option><option value="PaddysStage">St. Patricks</option><option value="SpringStage">Springening</option><option value="BirthdayStage">Birthdayz</option><option value="BirthdayPvZ1Stage">Birthdayz (PvZ1)</option><option value="ChildStage">Childrens Day</option><option value="SummerStage">Summer Nights</option><option value="SummerDayzStage">Summer Dayz</option><option value="BigheadStage">Big Brainz</option><option value="BigheadOldStage">Big Brainz (Old)</option><option value="HalloweenStage">Lawn of Doom</option><option value="HeroesStage">Heroes Event Stage</option><option value="FoodStage">Food Fight</option><option value="XmasStage">Feastivus</option><option value="XmasNightStage">Feastivus (Night)</option><option value="MashupStage">Holiday Mashup</option><option value="SteamStage">Steam Ages</option><option value="CarnivalStage">Caliginous Carnival</option><option value="FrontLawnFutureStage">Front Lawn Far Future Teaser</option><option value="FrontLawnDarkStage">Front Lawn Dark Ages Teaser</option><option value="FrontLawnBeachStage">Front Lawn Big Wave Beach Teaser</option><option value="FrontLawnIceageStage">Front Lawn Frostbite Caves Teaser</option><option value="FrontLawnLostCityStage">Front Lawn Lost City Teaser</option><option value="FrontLawnEightiesStage">Front Lawn Neon Mixtape Tour Teaser</option><option value="FrontLawnDinoStage">Front Lawn Jurassic Marsh Teaser</option><option value="FrontLawnSteamStage">Front Lawn Steam Ages Teaser</option><option value="FrontLawnCarnivalStage">Front Lawn Caliginous Carnival Teaser</option><option value="LunarDayStage">Lunar New Year (Day)</option><option value="LunarStage">Lunar New Year (Night)</option><option value="HarvestStage">Harvest</option><option value="SportzballStage">Backyard Brain Bowl</option><option value="AnniversaryStage">Anniversary</option><option value="SkyCityStage">Assault Airspace</option><option value="MeteorZStage">MeteorZ</option><option value="RiftStage">Rift Road</option><option value="MarketNightsStage">Lunar Rainbow Market</option><option value="MarketNightsVetStage">Lunar Rainbow Market (Vet)</option><option value="JoustStage">Arena</option><option value="ValentineEndlessStage">Calamity Calendar Valenbrainz</option><option value="PaddysEndlessStage">Calamity Calendar St. Patricks</option><option value="SpringEndlessStage">Calamity Calendar Springening</option><option value="BirthdayEndlessStage">Calamity Calendar Birthdayz</option><option value="ChildEndlessStage">Calamity Calendar Childrens Day</option><option value="BigheadEndlessStage">Calamity Calendar Big Brainz</option><option value="HalloweenEndlessStage">Calamity Calendar Lawn of Doom</option><option value="HeroesEndlessStage">Calamity Calendar Heroes Event</option><option value="FoodEndlessStage">Calamity Calendar Food Fight</option><option value="SummerEndlessStage">Calamity Calendar Summer Nights</option><option value="XmasEndlessStage">Calamity Calendar Feastivus</option><option value="MashupLevelGenStage">Calamity Calendar Holiday Mashup</option><option value="FrontLawnRomanStage">Front Lawn Roman</option><option value="FairyTaleStage">Fairytale Forest</option><option value="FairyTaleNightsStage">Fairytale Forest (Night)</option><option value="FairyTaleEndlessStage">Fairytale Forest (Endless)</option><option value="FairyTaleNightsEndlessStage">Fairytale Forest (Night, Endless)</option><option value="KingaversaryStage">King-a-versary</option><option value="MarketNightsEndlessStage">Lunar Rainbow Market (Endless)</option><option value="FrontLawnSteamTeaseStage">Front Lawn Steam Ages Teaser</option><option value="FrontLawnFutureLevelGenStage">Inzanity Front Lawn Far Future Teaser</option><option value="FrontLawnDarkLevelGenStage">Inzanity Front Lawn Dark Ages Teaser</option><option value="FrontLawnBeachLevelGenStage">Inzanity Front Lawn Big Wave Beach Teaser</option><option value="FrontLawnIceageLevelGenStage">Inzanity Front Lawn Frostbite Caves Teaser</option><option value="FrontLawnLostCityLevelGenStage">Inzanity Front Lawn Lost City Teaser</option><option value="FrontLawnEightiesLevelGenStage">Inzanity Front Lawn Neon Mixtape Tour Teaser</option><option value="FrontLawnDinoLevelGenStage">Inzanity Front Lawn Jurassic Marsh Teaser</option><option value="FrontLawnSteamLevelGenStage">Inzanity Front Lawn Steam Ages Teaser</option><option value="FrontLawnCarnivalLevelGenStage">Inzanity Front Lawn Caliginous Carnival Teaser</option></select>
+            </div>
             </div>
             
             <!-- SeedBank Plants (MOVED TO TOP) -->
-            <h2>SeedBank Plants</h2>
-            <div id="plantsContainer"><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; background-color: rgb(68, 21, 14); border-radius: 3px; color: rgb(249, 164, 75); border: 1px solid rgb(153, 56, 31);">
+            <h2>Seedbank: Pre-picked Plants</h2>
+            <div id="plantsContainer"><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; border-radius: 3px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Plant 1</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-plant-item]').remove(); generateJSON();">Remove</button>
@@ -933,12 +721,12 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <div>
-                        <label style="font-size: 12px;background-color: #99381F;padding: 5px;color: #FF9999;">Plant Type</label>
-                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px;font-weight: bold;background-color: #662815;color: white;border: dashed 1px #991F1F;border-radius: 3px;padding: 6px;width: 100%;">
+                        <label style="font-size: 12px; padding: 5px;">Plant Type</label>
+                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px; font-weight: bold; border-radius: 3px; padding: 6px; width: 100%;">
                         <datalist id="plantTypesList"></datalist>
                     </div>
                 </div>
-            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; background-color: rgb(68, 21, 14); border-radius: 3px; color: rgb(249, 164, 75); border: 1px solid rgb(153, 56, 31);">
+            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; border-radius: 3px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Plant 2</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-plant-item]').remove(); generateJSON();">Remove</button>
@@ -946,12 +734,12 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <div>
-                        <label style="font-size: 12px;background-color: #99381F;padding: 5px;color: #FF9999;">Plant Type</label>
-                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px;font-weight: bold;background-color: #662815;color: white;border: dashed 1px #991F1F;border-radius: 3px;padding: 6px;width: 100%;">
+                        <label style="font-size: 12px; padding: 5px;">Plant Type</label>
+                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px; font-weight: bold; border-radius: 3px; padding: 6px; width: 100%;">
                         <datalist id="plantTypesList"></datalist>
                     </div>
                 </div>
-            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; background-color: rgb(68, 21, 14); border-radius: 3px; color: rgb(249, 164, 75); border: 1px solid rgb(153, 56, 31);">
+            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; border-radius: 3px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Plant 3</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-plant-item]').remove(); generateJSON();">Remove</button>
@@ -959,12 +747,12 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <div>
-                        <label style="font-size: 12px;background-color: #99381F;padding: 5px;color: #FF9999;">Plant Type</label>
-                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px;font-weight: bold;background-color: #662815;color: white;border: dashed 1px #991F1F;border-radius: 3px;padding: 6px;width: 100%;">
+                        <label style="font-size: 12px; padding: 5px;">Plant Type</label>
+                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px; font-weight: bold; border-radius: 3px; padding: 6px; width: 100%;">
                         <datalist id="plantTypesList"></datalist>
                     </div>
                 </div>
-            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; background-color: rgb(68, 21, 14); border-radius: 3px; color: rgb(249, 164, 75); border: 1px solid rgb(153, 56, 31);">
+            </div><div data-plant-item="true" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; border-radius: 3px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Plant 4</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-plant-item]').remove(); generateJSON();">Remove</button>
@@ -972,8 +760,8 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <div>
-                        <label style="font-size: 12px;background-color: #99381F;padding: 5px;color: #FF9999;">Plant Type</label>
-                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px;font-weight: bold;background-color: #662815;color: white;border: dashed 1px #991F1F;border-radius: 3px;padding: 6px;width: 100%;">
+                        <label style="font-size: 12px; padding: 5px;">Plant Type</label>
+                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px; font-weight: bold; border-radius: 3px; padding: 6px; width: 100%;">
                         <datalist id="plantTypesList"></datalist>
                     </div>
                 </div>
@@ -986,19 +774,19 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             <button onclick="addModule()" style="font-size: 12px; padding: 6px 10px;">+ Add Module</button>
             
             <!-- Resource Groups (MOVED TO TOP) -->
-            <h2>Resource Groups</h2>
+            <h2>Additional Resource Groups</h2>
             <div id="resourceGroupsContainer"></div>
             <button onclick="addResourceGroup()" style="font-size: 12px; padding: 6px 10px;">+ Add Resource Group</button>
             
             <!-- Module Definitions -->
             <h2>Module Definitions</h2>
             <div id="moduleDefinitionsContainer">
-                <div data-moduledef-item="1" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; background-color: #44150E; border-radius: 3px; color: #F9A44B; border: 1px solid #99381F;">
+                <div data-moduledef-item="1" draggable="true" class="draggable-item" style="margin-bottom: 10px; padding: 8px; border-radius: 3px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                         <span style="font-size: 12px; font-weight: bold;">☰ Module Definition 1</span>
                         <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-moduledef-item]').remove(); generateJSON();">Remove</button>
                     </div>
-                    <textarea class="moduleDefCode" placeholder='{"aliases":["MyModule"],"objclass":"...","objdata":{...}}' style="width: 100%; height: 150px; padding: 6px; font-size: 11px; font-family: monospace; background-color: #662815; color: #FF9999; border: dashed 1px #991F1F; border-radius: 3px;">{
+                    <textarea class="moduleDefCode" placeholder='{"aliases":["MyModule"],"objclass":"...","objdata":{...}}' style="width: 100%; height: 150px; padding: 6px; font-size: 11px; font-family: monospace; border-radius: 3px;">{
             "aliases": [
                 "SeedPacketHalfTimeModule"
             ],
@@ -1021,26 +809,29 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 </div>
                 <div class="checkbox-item">
                     <input type="checkbox" id="suppressPlantfood">
-                    <label for="suppressPlantfood" style="margin: 0;">Suppress Plantfood</label>
+                    <label for="suppressPlantfood" style="margin: 0;">Disable PF Purchase</label>
                 </div>
             </div>
             
             <div class="checkbox-group">
                 <div class="checkbox-item">
                     <input type="checkbox" id="suppressAccountUpgrades" checked="">
-                    <label for="suppressAccountUpgrades" style="margin: 0;">Suppress Account Upgrades</label>
+                    <label for="suppressAccountUpgrades" style="margin: 0;">Disable Upgrades</label>
                 </div>
                 <div class="checkbox-item">
                     <input type="checkbox" id="disableSaveGame" checked="">
-                    <label for="disableSaveGame" style="margin: 0;">Disable Save Game</label>
+                    <label for="disableSaveGame" style="margin: 0;">Disable Save when exit</label>
                 </div>
             </div>
             
+            </section>
+
+            <section class="sheet-section theme-waves">
             <!-- Zombie Pool -->
             <div class="zombie-pool-section">
                 <div class="zombie-pool-title">
-                    Zombie Pool
-                    <span style="font-size: 12px; color: #888; font-weight: normal;">(Select zombies to use in waves below)</span>
+                    Zombies Pool
+                    <span style="font-size: 12px; font-weight: normal;">(Select zombies to use in waves below)</span>
                 </div>
                 <div class="zombie-pool-grid" id="zombiePoolGrid"><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="0" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="1" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="2" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="3" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="4" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="5" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="6" data-pool-col="5"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="0"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="1"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="2"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="3"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="4"></div><div class="zombie-pool-cell"><input type="text" class="zombie-pool-input" data-pool-row="7" data-pool-col="5"></div></div>
             </div>
@@ -1058,23 +849,23 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="form-group">
                     <label>
                         <input type="checkbox" class="useCustomHatPositions">
-                        Use Custom Hat Positions
+                        Custom Hat Position
                     </label>
                 </div>
                 
-                <div class="custom-hat-positions-section" style="display:none; background:#1a1a1a; padding:10px; border-radius:3px; margin-bottom:10px;">
-                    <label style="font-size: 12px; font-weight: bold;">Custom Hat Coordinates</label>
-                    <small style="color: #888; display: block; margin-bottom: 8px;">Note: x = 200, y = 160 corresponds to GridX = 0, GridY = 0</small>
+                <div class="custom-hat-positions-section" style="display: none; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
+                    <label style="font-size: 12px; font-weight: bold;">Custom Hat Position</label>
+                    <small style="display: block; margin-bottom: 8px;">Note: x = 200, y = 160 corresponds to GridX = 0, GridY = 0</small>
                     <div class="hat-positions-container"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Preview Duration (seconds)</label>
+                    <label>Preview Duration</label>
                     <input type="number" class="previewDuration" value="3" min="0" max="10">
                 </div>
                 
                 <div class="form-group">
-                    <label>Reveal Duration (seconds)</label>
+                    <label>Reveal Duration</label>
                     <input type="number" class="revealDuration" value="1" min="0" max="10">
                 </div>
                 
@@ -1091,7 +882,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="form-group">
                     <label>
                         <input type="checkbox" class="useRandomPlacement" checked="">
-                        Use Random Zombie Placement
+                        Random Zombie Placement
                     </label>
                 </div>
                 
@@ -1109,7 +900,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                     <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
                         <span class="toggle-icon">▼</span>
                         <span class="choice-label">Hat 1</span>
-                        <span class="preview-label" style="color: #888; font-size: 11px; font-weight: normal;">Preview: <span class="preview-value">-</span></span>
+                        <span class="preview-label" style="font-size: 11px; font-weight: normal;">Preview: <span class="preview-value">-</span></span>
                     </div>
                     <div class="choice-controls" onclick="event.stopPropagation();">
                         <button title="Shuffle hats" onclick="shuffleChoices(this.closest('.choice-header'))" style="padding: 4px 6px; font-size: 11px;">🔀</button>
@@ -1120,22 +911,12 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 </div>
                 <div class="choice-content">
                 <div class="form-group">
-                    <label>Preview Zombie</label>
-                        <input list="zombiePoolList" class="previewZombie" onchange="this.closest('.choice-group').querySelector('.preview-value').textContent = this.value || '-'" style="
-    background-color: #484848;
-    color: white;
-    font-weight: bold;
-    border: dashed 1px #999999;
-">
+                    <label>Zombie Preview</label>
+                        <input list="zombiePoolList" class="previewZombie" onchange="this.closest('.choice-group').querySelector('.preview-value').textContent = this.value || '-'" style="font-weight: bold;">
                 </div>
                 <div class="form-group">
                     <label>Reveal Zombie</label>
-                    <input list="zombiePoolList" class="revealZombie" style="
-                background-color: #484848;
-                color: white;
-                font-weight: bold;
-                border: dashed 1px #999999;
-                ">
+                    <input list="zombiePoolList" class="revealZombie" style="font-weight: bold;">
                 </div>
                                 
                 <div class="form-group">
@@ -1147,396 +928,203 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="indent-section" data-spawned-container="true" style="margin-top: 8px;">
                 <div class="zombie-grid"><div style="display: flex; gap: 4px; align-items: center;"><div class="zombie-grid-header" style="flex: 0 0 50px;">1</div><div style="display: flex; flex: 1 1 0%; gap: 1px;"><div class="zombie-grid-cell" data-row="1" data-col="1">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="1" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="1" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="1" data-col="1">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="1" data-col="2">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="2" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="2" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="1" data-col="2">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="1" data-col="3">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="3" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="3" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="1" data-col="3">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="1" data-col="4">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="4" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="4" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="1" data-col="4">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="1" data-col="5">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="5" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="1" data-col="5" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="1" data-col="5">
                         </div>
                     </div></div></div><div style="display: flex; gap: 4px; align-items: center;"><div class="zombie-grid-header" style="flex: 0 0 50px;">2</div><div style="display: flex; flex: 1 1 0%; gap: 1px;"><div class="zombie-grid-cell" data-row="2" data-col="1">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="1" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="1" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="2" data-col="1">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="2" data-col="2">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="2" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="2" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="2" data-col="2">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="2" data-col="3">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="3" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="3" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="2" data-col="3">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="2" data-col="4">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="4" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="4" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="2" data-col="4">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="2" data-col="5">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="5" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="2" data-col="5" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="2" data-col="5">
                         </div>
                     </div></div></div><div style="display: flex; gap: 4px; align-items: center;"><div class="zombie-grid-header" style="flex: 0 0 50px;">3</div><div style="display: flex; flex: 1 1 0%; gap: 1px;"><div class="zombie-grid-cell" data-row="3" data-col="1">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="1" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="1" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="3" data-col="1">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="3" data-col="2">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="2" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="2" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="3" data-col="2">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="3" data-col="3">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="3" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="3" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="3" data-col="3">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="3" data-col="4">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="4" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="4" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="3" data-col="4">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="3" data-col="5">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="5" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="3" data-col="5" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="3" data-col="5">
                         </div>
                     </div></div></div><div style="display: flex; gap: 4px; align-items: center;"><div class="zombie-grid-header" style="flex: 0 0 50px;">4</div><div style="display: flex; flex: 1 1 0%; gap: 1px;"><div class="zombie-grid-cell" data-row="4" data-col="1">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="1" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="1" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="4" data-col="1">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="4" data-col="2">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="2" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="2" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="4" data-col="2">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="4" data-col="3">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="3" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="3" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="4" data-col="3">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="4" data-col="4">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="4" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="4" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="4" data-col="4">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="4" data-col="5">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="5" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="4" data-col="5" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="4" data-col="5">
                         </div>
                     </div></div></div><div style="display: flex; gap: 4px; align-items: center;"><div class="zombie-grid-header" style="flex: 0 0 50px;">5</div><div style="display: flex; flex: 1 1 0%; gap: 1px;"><div class="zombie-grid-cell" data-row="5" data-col="1">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="1" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="1" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="5" data-col="1">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="5" data-col="2">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="2" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="2" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="5" data-col="2">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="5" data-col="3">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="3" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="3" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="5" data-col="3">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="5" data-col="4">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="4" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="4" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="5" data-col="4">
                         </div>
                     </div><div class="zombie-grid-cell" data-row="5" data-col="5">
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="5" value="" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="5" data-col="5" value="" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                             <input type="checkbox" class="zombie-pf-check" data-row="5" data-col="5">
                         </div>
-                    </div></div></div></div><div class="zombie-coordinate-mode" style="max-height: 300px; overflow-y: auto; margin-top: 10px; padding: 8px; background-color: rgb(26, 26, 26); border-radius: 3px; scrollbar-width: thin; scrollbar-color: rgb(72, 72, 72) rgb(26, 26, 26);"><div class="zombie-coordinate-mode-header" style="margin-bottom: 8px; font-weight: bold; font-size: 12px;">Advanced: Custom Coordinates</div><button style="font-size: 11px; padding: 6px 10px; margin-top: 8px;">+ Add Coordinate Zombie</button></div></div>
+                    </div></div></div></div><div class="zombie-coordinate-mode" style="max-height: 300px; overflow-y: auto; margin-top: 10px; padding: 8px; border-radius: 3px; scrollbar-width: thin;"><div class="zombie-coordinate-mode-header" style="margin-bottom: 8px; font-weight: bold; font-size: 12px;">Advanced: Custom Coordinates</div><button style="font-size: 11px; padding: 6px 10px; margin-top: 8px;">+ Add Coordinate Zombie</button></div></div>
                 </div>
             </div></div>
                 
                 <button onclick="addChoiceToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Hat</button>
                 
                 <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px;">
-                    Shuffle Patterns (SwapWaves)
+                    Swaps
                     <span class="toggle-help" onclick="togglePatternTutorial(event)" title="Click to expand/collapse" style="font-size: 12px; cursor: pointer;">📖</span>
                 </h3>
                 
-                <div class="pattern-tutorial" style="display:none; background:#1a2a1a; border-left:3px solid #4a9d4a; padding:12px; margin-bottom:12px; border-radius:3px;">
+                <div class="pattern-tutorial" style="display: none; padding: 12px; margin-bottom: 12px; border-radius: 3px;">
                     <details style="cursor: pointer;">
-                        <summary style="font-weight: bold; color: #7dd97d; margin-bottom: 8px;">Pattern Editor Help</summary>
-                        <div style="margin-top: 10px; font-size: 12px; color: #aaa; line-height: 1.6;">
-                            <p><strong style="color: #9f9;">What is a pattern?</strong><br>
+                        <summary style="font-weight: bold; margin-bottom: 8px;">Pattern Editor Help</summary>
+                        <div style="margin-top: 10px; font-size: 12px; line-height: 1.6;">
+                            <p><strong>What is a pattern?</strong><br>
                             Each pattern defines HOW the hats swap. The game picks one randomly every shuffle.</p>
                             
-                            <p><strong style="color: #9f9;">First (hat indices)</strong><br>
-                            The starting positions of hats. For 3 hats: <code style="background:#0f0f0f; padding:2px 4px;">0, 1, 2</code><br>
+                            <p><strong>First (hat indices)</strong><br>
+                            The starting positions of hats. For 3 hats: <code style="padding: 2px 4px;">0, 1, 2</code><br>
                             (Position 0 has hat 0, position 1 has hat 1, etc.)</p>
                             
-                            <p><strong style="color: #9f9;">Second (target positions)</strong><br>
+                            <p><strong>Second (target positions)</strong><br>
                             Where each hat moves to. If you swap positions 0 and 1:<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">1, 0, 2</code><br>
+                            <code style="padding: 2px 4px;">1, 0, 2</code><br>
                             (Hat 0 goes to position 1, hat 1 goes to position 0, hat 2 stays)</p>
                             
-                            <p><strong style="color: #9f9;">Style</strong><br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">SwapStraight</code> - Direct swap<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">ParabolicUp</code> - Arcs upward<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">ParabolicDown</code> - Arcs downward</p>
+                            <p><strong>Style</strong><br>
+                            <code style="padding: 2px 4px;">SwapStraight</code> - Direct swap<br>
+                            <code style="padding: 2px 4px;">ParabolicUp</code> - Arcs upward<br>
+                            <code style="padding: 2px 4px;">ParabolicDown</code> - Arcs downward</p>
                             
-                            <p><strong style="color: #9f9;">MovementCurve</strong><br>
-                            How smooth the animation is. Try: <code style="background:#0f0f0f; padding:2px 4px;">linear</code>, <code style="background:#0f0f0f; padding:2px 4px;">ease_in_out</code>, <code style="background:#0f0f0f; padding:2px 4px;">bounce</code></p>
+                            <p><strong>MovementCurve</strong><br>
+                            How smooth the animation is. Try: <code style="padding: 2px 4px;">linear</code>, <code style="padding: 2px 4px;">ease_in_out</code>, <code style="padding: 2px 4px;">bounce</code></p>
                             
-                            <p><strong style="color: #9f9;">Duration &amp; Cooldown</strong><br>
+                            <p><strong>Duration &amp; Cooldown</strong><br>
                             Duration: How long the swap takes (seconds)<br>
                             Cooldown: Pause after swap before next action (seconds)</p>
                             
-                            <p><strong style="color: #9f9;">ParabolicHeight</strong><br>
+                            <p><strong>ParabolicHeight</strong><br>
                             Only for ParabolicUp/Down. Height of the arc in pixels. Leave empty for straight swaps.</p>
                             
                         </div>
                     </details>
                 </div>
                 
-                <div class="indent-section" data-patterns-container="true" style="border-color: #2d5a2d;">
+                <div class="indent-section" data-patterns-container="true">
                 </div>
                 
-                <button onclick="addPatternToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Pattern</button>
+                <button onclick="addPatternToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Swap</button>
             </div></div>
             
             <button onclick="addWave()">+ Add Wave</button>
+            </section>
         </div>
         
-        <!-- Right Panel: JSON Output -->
-        <div class="panel right-panel">
-            <h1>JSON Output</h1>
-            
-            <div class="button-row">
-                <button class="secondary" onclick="copyJSON()">Copy to Clipboard</button>
-                <button class="secondary" onclick="downloadJSON()">Download JSON</button>
+        <!-- Right Panel: Level Code (mirrors the Level Code sheet) -->
+        <div class="panel right-panel theme-code">
+          <div class="lc-frame"><div class="lc-mid">
+            <div class="lc-title">
+                <div class="lc-h">Level Code</div>
+                <div>Copy the json code inside, or use the buttons below</div>
+                <div>On Mobile, use Copy to Clipboard at the bottom of the screen!</div>
+                <div class="button-row"><button class="secondary" onclick="copyJSON()">Copy to Clipboard</button><button class="secondary" onclick="downloadJSON()">Download JSON</button></div>
             </div>
-            
-            <div id="jsonOutput" class="json-output">{
-  "#comment": "[CARNIVAL_LEVEL_NAME] | BOH-LM: Ver-2 [RFL v1.4.1] in collaboration with Slimmy and co.",
-  "#zombies": "",
-  "objects": [
-    {
-      "objclass": "LevelDefinition",
-      "objdata": {
-        "Description": "[PLAYERS_TRIP_TO_CARNIVAL]",
-        "LevelNumber": 1,
-        "StartingSun": 0,
-        "SuppressPlantfoodPurchase": false,
-        "SuppressAccountUpgrades": true,
-        "DisableSaveGame": true,
-        "LevelPowerupSet": "LevelPowerupsDefault",
-        "Loot": "RTID(NoLoot@LevelModules)",
-        "Modules": [
-          "RTID(StandardIntro@LevelModules)",
-          "RTID(ZombiesDeadWinCon@LevelModules)",
-          "RTID(SeedBank@CurrentLevel)",
-          "RTID(CarnieMinigameModule@CurrentLevel)",
-          "RTID(Posters@CurrentLevel)",
-          "RTID(SeedPacketHalfTimeModule@CurrentLevel)"
-        ],
-        "ResourceGroupNames": [],
-        "MusicType": "MiniGame_B",
-        "Name": "[CARNIVAL_LEVEL_NAME]",
-        "NormalPresentTable": "egypt_normal_01",
-        "ShinyPresentTable": "egypt_shiny_01",
-        "StageModule": "RTID(CarnivalStage@LevelModules)"
-      }
-    },
-    {
-      "aliases": [
-        "Posters"
-      ],
-      "objclass": "CarniePosterModuleProperties",
-      "objdata": {
-        "LeftPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_HAVEABLAST_LEFT",
-        "RightPosterImageName": "IMAGE_BACKGROUNDS_CARNIVAL_POSTER_TRAMPOLIMPS_RIGHT"
-      }
-    },
-    {
-      "aliases": [
-        "CarnieMinigameModule"
-      ],
-      "objclass": "CarnieMinigameProperties",
-      "objdata": {
-        "AllowRestart": true,
-        "Waves": [
-          {
-            "HatCount": 2,
-            "UseCustomZombiePlacement": true,
-            "UseCustomHatPositions": false,
-            "PreviewDuration": 3,
-            "RevealDuration": 1,
-            "HatPopAnims": [
-              "POPANIM_EFFECTS_CARNIVAL_1HATS"
-            ],
-            "WaveStartSoundID": "Play_Awooga",
-            "Choices": [
-              {
-                "PreviewZombie": "carnie",
-                "SunAmount": 0,
-                "SpawnedZombies": [],
-                "JitteredStartX": 776,
-                "JitteredOffset": 64
-              }
-            ],
-            "SwapWaves": [
-              [
-                {
-                  "First": [
-                    0,
-                    1
-                  ],
-                  "Second": [
-                    1,
-                    0
-                  ],
-                  "Style": [
-                    "ParabolicUp",
-                    "ParabolicUp"
-                  ],
-                  "ParabolicHeight": [
-                    120,
-                    120
-                  ],
-                  "MovementCurve": [
-                    "ease_in",
-                    "ease_in"
-                  ],
-                  "Duration": 1,
-                  "Cooldown": 0
-                }
-              ],
-              [
-                {
-                  "First": [
-                    0,
-                    1
-                  ],
-                  "Second": [
-                    1,
-                    0
-                  ],
-                  "Style": [
-                    "SwapStraight",
-                    "SwapStraight"
-                  ],
-                  "MovementCurve": [
-                    "linear",
-                    "linear"
-                  ],
-                  "Duration": 0.5,
-                  "Cooldown": 0
-                }
-              ],
-              [
-                {
-                  "First": [
-                    1,
-                    0
-                  ],
-                  "Second": [
-                    0,
-                    1
-                  ],
-                  "Style": [
-                    "ParabolicUp",
-                    "ParabolicUp"
-                  ],
-                  "ParabolicHeight": [
-                    120,
-                    120
-                  ],
-                  "MovementCurve": [
-                    "ease_out",
-                    "ease_out"
-                  ],
-                  "Duration": 1,
-                  "Cooldown": 0
-                }
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "aliases": [
-        "NewWaves"
-      ],
-      "objclass": "WaveManagerModuleProperties",
-      "objdata": {
-        "WaveManagerProps": "RTID(WaveManagerProps@CurrentLevel)"
-      }
-    },
-    {
-      "aliases": [
-        "WaveManagerProps"
-      ],
-      "objclass": "WaveManagerProperties",
-      "objdata": {
-        "FlagWaveInterval": 1,
-        "WaveCount": 0,
-        "ZombieCountdownFirstWaveSecs": 0,
-        "ZombieCountdownHugeWaveDelay": 0,
-        "SuppressFlagZombie": false,
-        "MaxNextWaveHealthPercentage": 0.5,
-        "MinNextWaveHealthPercentage": 0.5,
-        "Waves": []
-      }
-    },
-    {
-      "aliases": [
-        "SeedBank"
-      ],
-      "objclass": "SeedBankProperties",
-      "objdata": {
-        "PresetPlantList": [
-          {
-            "PlantType": "peashooter",
-            "Level": -1
-          },
-          {
-            "PlantType": "sunflower",
-            "Level": -1
-          },
-          {
-            "PlantType": "wallnut",
-            "Level": -1
-          },
-          {
-            "PlantType": "bonkchoy",
-            "Level": -1
-          }
-        ],
-        "SelectionMethod": "preset"
-      }
-    }
-  ],
-  "version": 1
-}</div>
+            <div class="lc-bar">Full Level</div>
+            <div id="jsonOutput" class="json-output"></div>
+            <div class="lc-cols">
+                <div><div class="lc-bar">Initial Modules</div><div id="lcInitial" class="lc-box"></div></div>
+                <div><div class="lc-bar">Wave Manager Module</div><div id="lcManager" class="lc-box"></div></div>
+            </div>
+            <div class="lc-wave lc-wavehead"><div class="lc-bar n">Wave</div><div class="lc-bar">Wave Action Props</div></div>
+            <div id="lcWaves"></div>
+          </div></div>
         </div>
     </div>
 
@@ -1798,9 +1386,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 } catch (err) {
                     const msgEl = document.getElementById('successMessage');
                     msgEl.textContent = '✗ Error: ' + err.message;
-                    msgEl.style.backgroundColor = '#4a1a1a';
-                    msgEl.style.borderColor = '#7a2a2a';
-                    msgEl.style.color = '#ff9999';
+                    msgEl.classList.add('error');
                     msgEl.classList.add('show');
                     setTimeout(() => msgEl.classList.remove('show'), 4000);
                 }
@@ -1998,7 +1584,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                                 const customDiv = document.createElement('div');
                                 customDiv.style.marginBottom = '10px';
                                 customDiv.style.padding = '8px';
-                                customDiv.style.backgroundColor = '#0f0f0f';
+                                customDiv.classList.add('pos-cell');
                                 customDiv.style.borderRadius = '3px';
                                 customDiv.setAttribute('data-custom-index', idx);
                                 customDiv.innerHTML = `
@@ -2053,9 +1639,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             // Show success message
             const msgEl = document.getElementById('successMessage');
             msgEl.textContent = '✓ File Loaded Successfully';
-            msgEl.style.backgroundColor = '#1e4620';
-            msgEl.style.borderColor = '#2d6e2e';
-            msgEl.style.color = '#4ec9b0';
+            msgEl.classList.remove('error');
             msgEl.classList.add('show');
             setTimeout(() => msgEl.classList.remove('show'), 3000);
             
@@ -2343,23 +1927,23 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="form-group">
                     <label>
                         <input type="checkbox" class="useCustomHatPositions">
-                        Use Custom Hat Positions
+                        Custom Hat Position
                     </label>
                 </div>
                 
-                <div class="custom-hat-positions-section" style="display:none; background:#1a1a1a; padding:10px; border-radius:3px; margin-bottom:10px;">
-                    <label style="font-size: 12px; font-weight: bold;">Custom Hat Coordinates</label>
-                    <small style="color: #888; display: block; margin-bottom: 8px;">Note: x = 200, y = 160 corresponds to GridX = 0, GridY = 0</small>
+                <div class="custom-hat-positions-section" style="display: none; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
+                    <label style="font-size: 12px; font-weight: bold;">Custom Hat Position</label>
+                    <small style="display: block; margin-bottom: 8px;">Note: x = 200, y = 160 corresponds to GridX = 0, GridY = 0</small>
                     <div class="hat-positions-container"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Preview Duration (seconds)</label>
+                    <label>Preview Duration</label>
                     <input type="number" class="previewDuration" value="3" min="0" max="10">
                 </div>
                 
                 <div class="form-group">
-                    <label>Reveal Duration (seconds)</label>
+                    <label>Reveal Duration</label>
                     <input type="number" class="revealDuration" value="1" min="0" max="10">
                 </div>
                 
@@ -2376,7 +1960,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="form-group">
                     <label>
                         <input type="checkbox" class="useRandomPlacement" checked>
-                        Use Random Zombie Placement
+                        Random Zombie Placement
                     </label>
                 </div>
                 
@@ -2394,49 +1978,49 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <button onclick="addChoiceToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Hat</button>
                 
                 <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px;">
-                    Shuffle Patterns (SwapWaves)
+                    Swaps
                     <span class="toggle-help" onclick="togglePatternTutorial(event)" title="Click to expand/collapse" style="font-size: 12px; cursor: pointer;">📖</span>
                 </h3>
                 
-                <div class="pattern-tutorial" style="display:none; background:#1a2a1a; border-left:3px solid #4a9d4a; padding:12px; margin-bottom:12px; border-radius:3px;">
+                <div class="pattern-tutorial" style="display: none; padding: 12px; margin-bottom: 12px; border-radius: 3px;">
                     <details style="cursor: pointer;">
-                        <summary style="font-weight: bold; color: #7dd97d; margin-bottom: 8px;">Pattern Editor Help</summary>
-                        <div style="margin-top: 10px; font-size: 12px; color: #aaa; line-height: 1.6;">
-                            <p><strong style="color: #9f9;">What is a pattern?</strong><br>
+                        <summary style="font-weight: bold; margin-bottom: 8px;">Pattern Editor Help</summary>
+                        <div style="margin-top: 10px; font-size: 12px; line-height: 1.6;">
+                            <p><strong>What is a pattern?</strong><br>
                             Each pattern defines HOW the hats swap. The game picks one randomly every shuffle.</p>
                             
-                            <p><strong style="color: #9f9;">First (hat indices)</strong><br>
-                            The starting positions of hats. For 3 hats: <code style="background:#0f0f0f; padding:2px 4px;">0, 1, 2</code><br>
+                            <p><strong>First (hat indices)</strong><br>
+                            The starting positions of hats. For 3 hats: <code style="padding: 2px 4px;">0, 1, 2</code><br>
                             (Position 0 has hat 0, position 1 has hat 1, etc.)</p>
                             
-                            <p><strong style="color: #9f9;">Second (target positions)</strong><br>
+                            <p><strong>Second (target positions)</strong><br>
                             Where each hat moves to. If you swap positions 0 and 1:<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">1, 0, 2</code><br>
+                            <code style="padding: 2px 4px;">1, 0, 2</code><br>
                             (Hat 0 goes to position 1, hat 1 goes to position 0, hat 2 stays)</p>
                             
-                            <p><strong style="color: #9f9;">Style</strong><br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">SwapStraight</code> - Direct swap<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">ParabolicUp</code> - Arcs upward<br>
-                            <code style="background:#0f0f0f; padding:2px 4px;">ParabolicDown</code> - Arcs downward</p>
+                            <p><strong>Style</strong><br>
+                            <code style="padding: 2px 4px;">SwapStraight</code> - Direct swap<br>
+                            <code style="padding: 2px 4px;">ParabolicUp</code> - Arcs upward<br>
+                            <code style="padding: 2px 4px;">ParabolicDown</code> - Arcs downward</p>
                             
-                            <p><strong style="color: #9f9;">MovementCurve</strong><br>
-                            How smooth the animation is. Try: <code style="background:#0f0f0f; padding:2px 4px;">linear</code>, <code style="background:#0f0f0f; padding:2px 4px;">ease_in_out</code>, <code style="background:#0f0f0f; padding:2px 4px;">bounce</code></p>
+                            <p><strong>MovementCurve</strong><br>
+                            How smooth the animation is. Try: <code style="padding: 2px 4px;">linear</code>, <code style="padding: 2px 4px;">ease_in_out</code>, <code style="padding: 2px 4px;">bounce</code></p>
                             
-                            <p><strong style="color: #9f9;">Duration & Cooldown</strong><br>
+                            <p><strong>Duration & Cooldown</strong><br>
                             Duration: How long the swap takes (seconds)<br>
                             Cooldown: Pause after swap before next action (seconds)</p>
                             
-                            <p><strong style="color: #9f9;">ParabolicHeight</strong><br>
+                            <p><strong>ParabolicHeight</strong><br>
                             Only for ParabolicUp/Down. Height of the arc in pixels. Leave empty for straight swaps.</p>
                             
                         </div>
                     </details>
                 </div>
                 
-                <div class="indent-section" data-patterns-container="true" style="border-color: #2d5a2d;">
+                <div class="indent-section" data-patterns-container="true">
                 </div>
                 
-                <button onclick="addPatternToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Pattern</button>
+                <button onclick="addPatternToWave(event)" style="font-size: 12px; padding: 6px 10px;">+ Add Swap</button>
             `;
             
             container.appendChild(waveDiv);
@@ -2467,7 +2051,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 const posDiv = document.createElement('div');
                 posDiv.style.marginBottom = '10px';
                 posDiv.style.padding = '8px';
-                posDiv.style.backgroundColor = '#0f0f0f';
+                posDiv.classList.add('pos-cell');
                 posDiv.style.borderRadius = '3px';
                 posDiv.innerHTML = `
                     <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Hat ${i + 1}</div>
@@ -2569,7 +2153,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 <div class="pattern-header" onclick="togglePattern(this)">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span class="toggle-icon">▼</span>
-                        <span class="pattern-label">Pattern ${patternNumber}</span>
+                        <span class="pattern-label">Swap ${patternNumber}</span>
                     </div>
                     <div style="display: flex; gap: 4px;">
                         <button title="Copy from previous pattern" onclick="event.stopPropagation(); copyFromPreviousPattern(this.closest('.pattern-editor'))" style="padding: 3px 6px; font-size: 10px;">📋 Copy Prev</button>
@@ -2577,64 +2161,64 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                     </div>
                 </div>
                 <div class="pattern-content">
-                    <div style="background:#0a0a0a; padding:8px; border-radius:3px; margin-bottom:10px; border-left:2px solid #4a9d4a;">
-                        <strong style="color:#9f9; font-size:11px;">Pattern Layout Example for ${hatCount} hat(s):</strong><br>
-                        <code style="color:#7dd97d; font-size:10px;">First: ${defaultFirst} → Second: ${defaultSecond}</code>
+                    <div style="padding: 8px; border-radius: 3px; margin-bottom: 10px;">
+                        <strong style="font-size: 11px;">Pattern Layout Example for ${hatCount} hat(s):</strong><br>
+                        <code style="font-size: 10px;">First: ${defaultFirst} → Second: ${defaultSecond}</code>
                     </div>
                     
                     <div class="pattern-field">
-                        <label>First (Starting Positions)</label>
-                        <small style="color: #888;">Automatically matches hat count above</small>
-                        <div class="pattern-first-list" style="background-color: #44150E; border: dashed 1px #991F1F; border-radius: 3px; padding: 8px; margin-top: 6px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;">
+                        <label>Hats</label>
+                        <small>Automatically matches hat count above</small>
+                        <div class="pattern-first-list" style="border-radius: 3px; padding: 8px; margin-top: 6px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;">
                         </div>
-                        <button onclick="addFirstPosition(this.closest('[data-pattern-item]'))" style="margin-top: 6px; padding: 4px 8px; background-color: #662815; color: #FF9999; border: 1px solid #991F1F; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Position</button>
+                        <button onclick="addFirstPosition(this.closest('[data-pattern-item]'))" style="margin-top: 6px; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Position</button>
                     </div>
                     <div class="pattern-field">
-                        <label>Second (Where They Go)</label>
-                        <small style="color: #888;">Same as First but shuffled. Set to -1 for custom positions.</small>
-                        <div class="pattern-second-list" style="background-color: #44150E; border: dashed 1px #991F1F; border-radius: 3px; padding: 8px; margin-top: 6px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;">
+                        <label>Swaps</label>
+                        <small>Same as First but shuffled. Set to -1 for custom positions.</small>
+                        <div class="pattern-second-list" style="border-radius: 3px; padding: 8px; margin-top: 6px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;">
                         </div>
-                        <button onclick="randomisePatternList(this.closest('[data-pattern-item]').querySelector('.pattern-second-list'))" style="margin-top: 6px; padding: 4px 8px; background-color: #662815; color: #FF9999; border: 1px solid #991F1F; border-radius: 3px; cursor: pointer; font-size: 12px;">Randomise</button>
+                        <button onclick="randomisePatternList(this.closest('[data-pattern-item]').querySelector('.pattern-second-list'))" style="margin-top: 6px; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">Randomise</button>
                     </div>
                     
                     <div class="pattern-field">
-                        <label>🔄 Style (Animation Type)</label>
+                        <label>🔄 Style</label>
                         <select class="pattern-style" style="font-size: 12px; padding: 4px;">
                             <option value="SwapStraight">SwapStraight (Direct swap)</option>
                             <option value="ParabolicUp">ParabolicUp (Arc upward)</option>
                             <option value="ParabolicDown">ParabolicDown (Arc downward)</option>
                         </select>
-                        <small style="color: #888;">How hats visually move</small>
+                        <small>How hats visually move</small>
                     </div>
                     <div class="pattern-field">
-                        <label>⏱️ MovementCurve (Animation Smoothness)</label>
+                        <label>⏱️ Movement Curve</label>
                         <select class="pattern-curve" style="font-size: 12px; padding: 4px;">
                             ${MOVEMENT_CURVES.map(curve => `<option value="${curve}">${curve}</option>`).join('')}
                         </select>
-                        <small style="color: #888;">linear, ease_in_out, bounce, etc.</small>
+                        <small>linear, ease_in_out, bounce, etc.</small>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div class="pattern-field">
-                            <label>⏸️ Duration (seconds)</label>
+                            <label>⏸️ Duration</label>
                             <input type="number" class="pattern-duration" value="0.25" min="0" step="0.05">
-                            <small style="color: #888;">How long the swap takes</small>
+                            <small>How long the swap takes</small>
                         </div>
                         <div class="pattern-field">
-                            <label>⏳ Cooldown (seconds)</label>
+                            <label>⏳ Cooldown</label>
                             <input type="number" class="pattern-cooldown" value="0.22" min="0" step="0.05">
-                            <small style="color: #888;">Pause after swap</small>
+                            <small>Pause after swap</small>
                         </div>
                     </div>
                     
                     <div class="pattern-field">
-                        <label>📈 ParabolicHeight (arc pixels)</label>
+                        <label>📈 Height</label>
                         <input type="text" class="array-input pattern-height" placeholder="120, 120" value="">
-                        <small style="color: #888;">Only for ParabolicUp/Down. Leave empty for straight.</small>
+                        <small>Only for ParabolicUp/Down. Leave empty for straight.</small>
                     </div>
                     
-                    <div class="custom-positions-section" style="display: none; background: #1a2a1a; border-left: 3px solid #4a9d4a; padding: 12px; margin-top: 15px; border-radius: 3px;">
-                        <label style="font-weight: bold; color: #7dd97d; display: block; margin-bottom: 10px;">Custom Hat Positions (Set when Second values are -1)</label>
+                    <div class="custom-positions-section" style="display: none; padding: 12px; margin-top: 15px; border-radius: 3px;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 10px;">Custom Hat Positions (Set when Second values are -1)</label>
                     </div>
                 </div>
             `;
@@ -2730,7 +2314,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                     <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
                         <span class="toggle-icon">▼</span>
                         <span class="choice-label">Hat ${choiceNumber}</span>
-                        <span class="preview-label" style="color: #888; font-size: 11px; font-weight: normal;">Preview: <span class="preview-value">-</span></span>
+                        <span class="preview-label" style="font-size: 11px; font-weight: normal;">Preview: <span class="preview-value">-</span></span>
                     </div>
                     <div class="choice-controls" onclick="event.stopPropagation();">
                         <button title="Shuffle hats" onclick="shuffleChoices(this.closest('.choice-header'))" style="padding: 4px 6px; font-size: 11px;">🔀</button>
@@ -2741,23 +2325,13 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 </div>
                 <div class="choice-content">
                 <div class="form-group">
-                    <label>Preview Zombie</label>
-                        <input list="zombiePoolList" class="previewZombie" onchange="this.closest('.choice-group').querySelector('.preview-value').textContent = this.value || '-'" style="
-    background-color: #484848;
-    color: white;
-    font-weight: bold;
-    border: dashed 1px #999999;
-">
+                    <label>Zombie Preview</label>
+                        <input list="zombiePoolList" class="previewZombie" onchange="this.closest('.choice-group').querySelector('.preview-value').textContent = this.value || '-'" style="font-weight: bold;">
                 </div>
                 
                 <div class="form-group">
                     <label>Reveal Zombie</label>
-                    <input list="zombiePoolList" class="revealZombie" style="
-    background-color: #484848;
-    color: white;
-    font-weight: bold;
-    border: dashed 1px #999999;
-">
+                    <input list="zombiePoolList" class="revealZombie" style="font-weight: bold;">
                 </div>
                 
                 <div class="form-group">
@@ -2866,7 +2440,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                     
                     cell.innerHTML = `
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="${row}" data-col="${col}" value="${cellData.type}" style="flex: 1; min-width: 80px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;" />
+                            <input type="text" class="zombie-type-select" list="zombiePoolList" data-row="${row}" data-col="${col}" value="${cellData.type}" style="flex: 1; min-width: 80px; border-radius: 2px; font-weight: bold; font-size: 11px;" />
                             <input type="checkbox" class="zombie-pf-check" data-row="${row}" data-col="${col}" ${cellData.plantfood ? 'checked' : ''}>
                         </div>
                     `;
@@ -2923,11 +2497,10 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             coordDiv.style.overflowY = 'auto';
             coordDiv.style.marginTop = '10px';
             coordDiv.style.padding = '8px';
-            coordDiv.style.backgroundColor = '#1a1a1a';
+            coordDiv.classList.add('pos-cell');
             coordDiv.style.borderRadius = '3px';
             // Add scrollbar styling
             coordDiv.style.scrollbarWidth = 'thin';
-            coordDiv.style.scrollbarColor = '#484848 #1a1a1a';
             
             const header = document.createElement('div');
             header.className = 'zombie-coordinate-mode-header';
@@ -2950,9 +2523,9 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 itemDiv.style.alignItems = 'center';
                 
                 itemDiv.innerHTML = `
-                    <input type="text" class="zombie-coord-type" list="zombiePoolList" data-coord-idx="${idx}" value="${coord.type}" style="flex: 1; min-width: 80px; padding: 4px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
-                    <input type="number" class="zombie-coord-x" data-coord-idx="${idx}" placeholder="X" value="${coord.x || 0}" style="width: 50px; padding: 4px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
-                    <input type="number" class="zombie-coord-y" data-coord-idx="${idx}" placeholder="Y" value="${coord.y || 0}" style="width: 50px; padding: 4px; background-color: #484848; color: #ffffff; border: 1px solid #484848; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                    <input type="text" class="zombie-coord-type" list="zombiePoolList" data-coord-idx="${idx}" value="${coord.type}" style="flex: 1; min-width: 80px; padding: 4px; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                    <input type="number" class="zombie-coord-x" data-coord-idx="${idx}" placeholder="X" value="${coord.x || 0}" style="width: 50px; padding: 4px; border-radius: 2px; font-weight: bold; font-size: 11px;">
+                    <input type="number" class="zombie-coord-y" data-coord-idx="${idx}" placeholder="Y" value="${coord.y || 0}" style="width: 50px; padding: 4px; border-radius: 2px; font-weight: bold; font-size: 11px;">
                     <input type="checkbox" class="zombie-coord-pf" data-coord-idx="${idx}" ${coord.plantfood ? 'checked' : ''} title="Plantfood" style="width: 18px; height: 18px;">
                     <button class="secondary" style="padding: 4px 8px; font-size: 10px;" onclick="removeCoordinateZombie(${idx}, event)">×</button>
                 `;
@@ -3097,10 +2670,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             plantDiv.className = 'draggable-item';
             plantDiv.style.marginBottom = '10px';
             plantDiv.style.padding = '8px';
-            plantDiv.style.backgroundColor = '#44150E';
             plantDiv.style.borderRadius = '3px';
-            plantDiv.style.color = '#F9A44B';
-            plantDiv.style.border = '1px solid #99381F';
             
             plantDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
@@ -3110,8 +2680,8 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <div>
-                        <label style="font-size: 12px;background-color: #99381F;padding: 5px;color: #FF9999;">Plant Type</label>
-                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px;font-weight: bold;background-color: #662815;color: white;border: dashed 1px #991F1F;border-radius: 3px;padding: 6px;width: 100%;" />
+                        <label style="font-size: 12px; padding: 5px;">Plant Type</label>
+                        <input list="plantTypesList" class="plantType" value="peashooter" style="font-size: 12px; font-weight: bold; border-radius: 3px; padding: 6px; width: 100%;" />
                         <datalist id="plantTypesList"></datalist>
                     </div>
                 </div>
@@ -3148,17 +2718,14 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             moduleDefDiv.className = 'draggable-item';
             moduleDefDiv.style.marginBottom = '10px';
             moduleDefDiv.style.padding = '8px';
-            moduleDefDiv.style.backgroundColor = '#44150E';
             moduleDefDiv.style.borderRadius = '3px';
-            moduleDefDiv.style.color = '#F9A44B';
-            moduleDefDiv.style.border = '1px solid #99381F';
             
             moduleDefDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Module Definition ${moduleDefNumber}</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-moduledef-item]').remove(); generateJSON();">Remove</button>
                 </div>
-                <textarea class="moduleDefCode" placeholder='{"aliases":["MyModule"],"objclass":"...","objdata":{...}}' style="width: 100%; height: 150px; padding: 6px; font-size: 11px; font-family: monospace; background-color: #662815; color: #FF9999; border: dashed 1px #991F1F; border-radius: 3px;"></textarea>
+                <textarea class="moduleDefCode" placeholder='{"aliases":["MyModule"],"objclass":"...","objdata":{...}}' style="width: 100%; height: 150px; padding: 6px; font-size: 11px; font-family: monospace; border-radius: 3px;"></textarea>
             `;
             
             moduleDefsContainer.appendChild(moduleDefDiv);
@@ -3177,17 +2744,14 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             moduleDiv.className = 'draggable-item';
             moduleDiv.style.marginBottom = '10px';
             moduleDiv.style.padding = '8px';
-            moduleDiv.style.backgroundColor = '#44150E';
             moduleDiv.style.borderRadius = '3px';
-            moduleDiv.style.color = '#F9A44B';
-            moduleDiv.style.border = '1px solid #99381F';
             
             moduleDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Module ${moduleNumber}</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-module-item]').remove(); generateJSON();">Remove</button>
                 </div>
-                <input type="text" class="moduleName" placeholder="e.g., RTID(StandardIntro@LevelModules)" value="" style="width: 100%; padding: 6px; font-size: 12px; font-weight: bold; background-color: #662815; color: #FF9999; border: dashed 1px #991F1F; border-radius: 3px;" />
+                <input type="text" class="moduleName" placeholder="e.g., RTID(StandardIntro@LevelModules)" value="" style="width: 100%; padding: 6px; font-size: 12px; font-weight: bold; border-radius: 3px;" />
             `;
             
             modulesContainer.appendChild(moduleDiv);
@@ -3206,17 +2770,14 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             resourceGroupDiv.className = 'draggable-item';
             resourceGroupDiv.style.marginBottom = '10px';
             resourceGroupDiv.style.padding = '8px';
-            resourceGroupDiv.style.backgroundColor = '#44150E';
             resourceGroupDiv.style.borderRadius = '3px';
-            resourceGroupDiv.style.color = '#F9A44B';
-            resourceGroupDiv.style.border = '1px solid #99381F';
             
             resourceGroupDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: grab; user-select: none;">
                     <span style="font-size: 12px; font-weight: bold;">☰ Resource Group ${resourceGroupNumber}</span>
                     <button class="danger" style="padding: 3px 6px; font-size: 10px;" onclick="this.closest('[data-resourcegroup-item]').remove(); generateJSON();">Remove</button>
                 </div>
-                <input type="text" class="resourceGroupName" placeholder="e.g., DelayLoad_Background_Beach" value="" style="width: 100%; padding: 6px; font-size: 12px; font-weight: bold; background-color: #662815; color: #FF9999; border: dashed 1px #991F1F; border-radius: 3px;" />
+                <input type="text" class="resourceGroupName" placeholder="e.g., DelayLoad_Background_Beach" value="" style="width: 100%; padding: 6px; font-size: 12px; font-weight: bold; border-radius: 3px;" />
             `;
             
             resourceGroupsContainer.appendChild(resourceGroupDiv);
@@ -3571,8 +3132,9 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
             });
             
             const jsonOutput = {
-                "#comment": levelName + " | BOH-LM: Ver-2 [RFL v1.4.1] in collaboration with Slimmy and co.",
+                "#LevelHeader": levelName + " | BOH-LM: Ver-2 [RFL v1.4.2] in collaboration with Slimmy and co.",
                 "#zombies": Array.from(usedZombies).join(","),
+                "#waveAmount": waves.length + " Waves",
                 "objects": [
                     {
                         "objclass": "LevelDefinition",
@@ -3585,7 +3147,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                             "DisableSaveGame": document.getElementById('disableSaveGame').checked,
                             "LevelPowerupSet": "LevelPowerupsDefault",
                             "Loot": "RTID(NoLoot@LevelModules)",
-                            "Modules": (() => {
+                            "Modules": ((m) => document.getElementById('useMowers').checked ? [...m, 'RTID(' + document.getElementById('mowerType').value + '@LevelModules)'] : m)((() => {
                                 const modules = [];
                                 document.querySelectorAll('#modulesContainer [data-module-item]').forEach(moduleEl => {
                                     const moduleName = moduleEl.querySelector('.moduleName').value.trim();
@@ -3601,7 +3163,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                                     "RTID(Posters@CurrentLevel)",
                                     "RTID(SeedPacketHalfTimeModule@CurrentLevel)"
                                 ];
-                            })(),
+                            })()),
                             "ResourceGroupNames": (() => {
                                 const resourceGroups = [];
                                 document.querySelectorAll('#resourceGroupsContainer [data-resourcegroup-item]').forEach(rgEl => {
@@ -3714,7 +3276,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 "version": 1
             };
             
-            document.getElementById('jsonOutput').textContent = JSON.stringify(jsonOutput, null, 2);
+            renderLevelCode(jsonOutput, waves);
             
             // Show success message
             const msgEl = document.getElementById('successMessage');
@@ -4024,7 +3586,7 @@ html {transition: filter 300ms linear; -webkit-transition: -webkit-filter 300ms 
                 const customDiv = document.createElement('div');
                 customDiv.style.marginBottom = '10px';
                 customDiv.style.padding = '8px';
-                customDiv.style.backgroundColor = '#0f0f0f';
+                customDiv.classList.add('pos-cell');
                 customDiv.style.borderRadius = '3px';
                 customDiv.setAttribute('data-custom-index', i);
                 customDiv.innerHTML = `
@@ -4106,12 +3668,6 @@ document.addEventListener('click', e => {
     if (t) t.closest('.wave-container').classList.toggle('collapsed');
 });
 </script>
-<style>
-.zac-menu{position:absolute;z-index:1000;background:#2d2d2d;border:1px solid #555;border-radius:4px;display:none;box-shadow:0 4px 12px rgba(0,0,0,.5);min-width:180px}
-.zac-item{padding:10px 12px;font-size:14px;color:#e0e0e0;cursor:pointer;font-family:monospace;border-bottom:1px solid #3a3a3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.zac-item:last-child{border-bottom:none}
-.zac-item.active{background:#0e639c}
-</style>
 <script>
 (function(){
   const ZOMBIE_OPTIONS = [...new Set(Array.from(document.querySelectorAll('#zombiePoolList option, #zombieTypesList option')).map(o => o.value))];
@@ -4265,6 +3821,72 @@ document.addEventListener('click', e => {
     ensureTwoHats(waves[waves.length - 1]);
   };
   document.querySelectorAll('.wave-container').forEach(ensureTwoHats);
+})();
+</script>
+<script>
+function renderLevelCode(j, waves) {
+  const q = JSON.stringify;
+  const fmt = o => '{' + (o.aliases ? '"aliases": ' + q(o.aliases) + ',' : '') + '\n"objclass": ' + q(o.objclass) + ',\n"objdata": ' + q(o.objdata, null, 4) + '}';
+  const head = Object.keys(j).filter(k => k[0] === '#').map(k => q(k) + ': ' + q(j[k]) + ',').join('\n');
+  document.getElementById('jsonOutput').textContent = '{' + head + '\n"objects": [' + j.objects.map(fmt).join(',\n') + '\n],\n"version": ' + j.version + '\n}';
+  const has = (o, n) => (o.aliases || []).includes(n);
+  const mgr = j.objects.filter(o => ['CarnieMinigameModule', 'NewWaves', 'WaveManagerProps'].some(n => has(o, n)));
+  const ini = j.objects.filter(o => !mgr.includes(o) && o.objclass !== 'LevelDefinition');
+  document.getElementById('lcInitial').textContent = ini.map(fmt).join(',\n') + ',';
+  document.getElementById('lcManager').textContent = mgr.map(fmt).join(',\n') + ',';
+  const box = document.getElementById('lcWaves');
+  box.innerHTML = waves.map((w, i) => '<div class="lc-wave ' + (i % 2 ? 'even' : 'odd') + '"><div class="n">' + (i + 1) + '</div><pre></pre></div>').join('');
+  box.querySelectorAll('pre').forEach((p, i) => p.textContent = q(waves[i], null, 4) + ',');
+}
+window.addEventListener('load', () => { try { generateJSON(); } catch (e) { console.warn(e); } });
+</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id), grp = id => $(id).closest('.form-group');
+  const left = document.querySelector('.left-panel'), right = document.querySelector('.right-panel');
+  const settings = left.querySelector('.theme-settings'), boh = left.querySelector('.theme-waves');
+  const pool = boh.querySelector('.zombie-pool-section');
+  const defH2 = [...settings.querySelectorAll('h2')].find(e => e.textContent.trim() === 'Module Definitions');
+  const defBox = defH2.nextElementSibling, defBtn = defBox.nextElementSibling;
+  defH2.textContent = 'Extra Code';
+  // Waves tab: Level Name / Music / Description / Stage / Mowers, Zombies Pool, extra code
+  const tw = document.createElement('section');
+  tw.className = 'sheet-section theme-waves tab-pane'; tw.id = 'tab-waves';
+  tw.innerHTML = '<h2>Wave Manager</h2><div class="sheet-grid hdr3"></div>';
+  const hdr = tw.querySelector('.hdr3');
+  const mow = document.createElement('div');
+  mow.className = 'form-group mowers';
+  mow.innerHTML = '<label><input type="checkbox" id="useMowers"> Mowers</label><input type="text" id="mowerType" value="ModernMowers">';
+  [grp('levelName'), grp('musicType'), document.createElement('div'), grp('description'), grp('stageSelector'), mow].forEach(e => hdr.appendChild(e));
+  tw.append(pool, defH2, defBox, defBtn);
+  left.appendChild(tw);
+  settings.classList.add('tab-pane'); settings.id = 'tab-settings';
+  boh.classList.replace('theme-waves', 'theme-boh'); boh.classList.add('tab-pane'); boh.id = 'tab-boh';
+  right.classList.add('tab-pane'); right.id = 'tab-code';
+  // bottom tab bar
+  const bar = document.createElement('div'); bar.className = 'tabbar';
+  [['tab-waves', 'Waves', 't-waves'], ['tab-settings', 'Settings', 't-settings'], ['tab-boh', 'Blight of Hand', 't-boh'], ['tab-code', 'Level Code', 't-code']].forEach(([id, name, c]) => {
+    const b = document.createElement('button'); b.textContent = name; b.className = c; b.dataset.tab = id;
+    b.onclick = () => show(id); bar.appendChild(b);
+  });
+  document.body.appendChild(bar);
+  function show(id) {
+    document.querySelectorAll('.tab-pane').forEach(e => e.classList.toggle('active', e.id === id));
+    bar.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    if (id === 'tab-code') { try { generateJSON(); } catch (e) {} }
+    window.scrollTo(0, 0);
+  }
+  show('tab-waves');
+})();
+</script>
+<script>
+(function () {
+  const tw = document.getElementById('tab-waves'), hdr = tw.querySelector('.hdr3'), pool = tw.querySelector('.zombie-pool-section');
+  hdr.children[2].remove();
+  const top = document.createElement('div'); top.className = 'waves-top';
+  hdr.before(top); top.append(pool, hdr);
+  const hs = document.querySelectorAll('#tab-settings > h2');
+  hs[0].textContent = 'Level Settings'; if (hs[1]) hs[1].textContent = 'Level Definition';
 })();
 </script>
 </body></html>
